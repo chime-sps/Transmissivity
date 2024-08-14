@@ -1,0 +1,46 @@
+Jul 31 03:10:25 INFO >> {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "find", "topologyDescription": "<TopologyDescription id: 66a9ab2128cbc118cf6161a4, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "66a9ab2128cbc118cf6161a4"}, "remainingTimeMS": 29}
+Jul 31 03:10:25 INFO >> Features initialized as the following:
+Jul 31 03:10:25 INFO >> num_unique_dms
+Jul 31 03:10:25 INFO >> num_unique_freqs
+Jul 31 03:10:25 INFO >> ndetections
+Jul 31 03:10:25 INFO >> nharm
+Jul 31 03:10:25 INFO >> log_p_dm
+Jul 31 03:10:25 INFO >> ['dm_sigma_FitGaussWidth_gauss_sigma', 'dm_sigma_FitGaussWidth_gauss_sigma_rel_err', 'dm_sigma_FitGaussWidth_ndof', 'dm_sigma_FitGaussWidth_rms_err']
+Jul 31 03:10:25 INFO >> ['dm_sigma_FitGauss_amplitude', 'dm_sigma_FitGauss_mu', 'dm_sigma_FitGauss_gauss_sigma', 'dm_sigma_FitGauss_amplitude_rel_err', 'dm_sigma_FitGauss_mu_rel_err', 'dm_sigma_FitGauss_gauss_sigma_rel_err', 'dm_sigma_FitGauss_amplitude-detection', 'dm_sigma_FitGauss_mu-detection', 'dm_sigma_FitGauss_ndof', 'dm_sigma_FitGauss_rms_err']
+Jul 31 03:10:25 INFO >> ['freq_sigma_FitGaussWidth_gauss_sigma', 'freq_sigma_FitGaussWidth_gauss_sigma_rel_err', 'freq_sigma_FitGaussWidth_ndof', 'freq_sigma_FitGaussWidth_rms_err']
+Jul 31 03:10:25 INFO >> ['freq_sigma_FitGauss_amplitude', 'freq_sigma_FitGauss_mu', 'freq_sigma_FitGauss_gauss_sigma', 'freq_sigma_FitGauss_amplitude_rel_err', 'freq_sigma_FitGauss_mu_rel_err', 'freq_sigma_FitGauss_gauss_sigma_rel_err', 'freq_sigma_FitGauss_amplitude-detection', 'freq_sigma_FitGauss_mu-detection', 'freq_sigma_FitGauss_ndof', 'freq_sigma_FitGauss_rms_err']
+Jul 31 03:10:26 INFO >> Performing searching on cumulative stack 315.95 49.23
+Jul 31 03:10:26 INFO >> Loading the cumulative power spectra stack to search
+Jul 31 03:11:19 INFO >> DM: 107.3817479147
+Jul 31 03:11:19 INFO >> sigma: 11.28372911
+Jul 31 03:11:19 INFO >> frequency: 145.75933009692955
+Jul 31 03:11:19 INFO >> Injecting 3 harmonics.
+Jul 31 03:11:19 INFO >> Starting DM: 106.66262149492151
+Jul 31 03:11:19 INFO >> Stopping DM: 108.07939255842142
+Jul 31 03:11:26 INFO >> Start searching 6558 dm trials using 32 harmonics.
+Jul 31 03:11:26 INFO >> Number of dm trials in single multi processing job: 10
+Jul 31 03:12:35 INFO >> Total number of detections=15580
+Jul 31 03:12:35 INFO >> Clustering the detections
+Jul 31 03:12:35 INFO >> Starting clustering
+Jul 31 03:12:35 INFO >> Rogue harmonic power filter reduced detections from 15580 to 8522
+Jul 31 03:12:36 INFO >> Filtering out duplicate freq,dm detections at multiple nharms removes 787 detections
+Jul 31 03:12:36 INFO >> Duplicate freq,dm filter reduced detections to 7735
+Jul 31 03:12:36 INFO >> Number of detections over threshold sigma (6.0): 7735
+Jul 31 03:12:36 INFO >> Grouping duplicate frequencies together first
+Jul 31 03:12:36 INFO >> Grouping duplicate frequencies removed 7214 detections from the harmonic metric computation
+Jul 31 03:12:36 INFO >> Starting freq-DM distance metric computation
+Jul 31 03:12:36 INFO >> Finished freq-DM distance metric computation
+Jul 31 03:12:37 INFO >> Largest group size for metric computation is 97
+Jul 31 03:12:37 INFO >> Starting harmonic distance metric computation
+Jul 31 03:12:37 INFO >> Finished harmonic distance metric computation
+Jul 31 03:12:37 INFO >> Starting DBSCAN
+Jul 31 03:12:38 INFO >> Finished DBSCAN
+Jul 31 03:12:38 INFO >> Clusters found: 75
+Jul 31 03:12:38 INFO >> Filtered 32 clusters below or equal 2 DM.
+Jul 31 03:12:38 INFO >> Total number of candidate clusters=0
+Jul 31 03:12:38 INFO >> Candidate Processor of stack (315.95 49.23)
+Jul 31 03:12:38 INFO >> Making SinglePointingCandidates from a list of 0 PowerSpectraDetectionClusters
+Jul 31 03:12:41 INFO >> saved candidates to ./results//candidates_cumul/315.95_49.23_cumulative_power_spectra_stack_20220627_11_candidates.npz
+Jul 31 03:12:41 INFO >> 0 candidates.
+Jul 31 03:12:43 INFO >> Unlinked shared memory for cumulative stack.
+Jul 31 03:12:43 INFO >> Pipeline execution time: 2.30 minutes

@@ -1,0 +1,26 @@
+Aug 14 15:54:45 INFO >> {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "find", "topologyDescription": "<TopologyDescription id: 66bcd3450ad035a5f024f01b, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "66bcd3450ad035a5f024f01b"}, "remainingTimeMS": 29}
+Aug 14 15:54:46 INFO >> Features initialized as the following:
+Aug 14 15:54:46 INFO >> num_unique_dms
+Aug 14 15:54:46 INFO >> num_unique_freqs
+Aug 14 15:54:46 INFO >> ndetections
+Aug 14 15:54:46 INFO >> nharm
+Aug 14 15:54:46 INFO >> log_p_dm
+Aug 14 15:54:46 INFO >> ['dm_sigma_FitGaussWidth_gauss_sigma', 'dm_sigma_FitGaussWidth_gauss_sigma_rel_err', 'dm_sigma_FitGaussWidth_ndof', 'dm_sigma_FitGaussWidth_rms_err']
+Aug 14 15:54:46 INFO >> ['dm_sigma_FitGauss_amplitude', 'dm_sigma_FitGauss_mu', 'dm_sigma_FitGauss_gauss_sigma', 'dm_sigma_FitGauss_amplitude_rel_err', 'dm_sigma_FitGauss_mu_rel_err', 'dm_sigma_FitGauss_gauss_sigma_rel_err', 'dm_sigma_FitGauss_amplitude-detection', 'dm_sigma_FitGauss_mu-detection', 'dm_sigma_FitGauss_ndof', 'dm_sigma_FitGauss_rms_err']
+Aug 14 15:54:46 INFO >> ['freq_sigma_FitGaussWidth_gauss_sigma', 'freq_sigma_FitGaussWidth_gauss_sigma_rel_err', 'freq_sigma_FitGaussWidth_ndof', 'freq_sigma_FitGaussWidth_rms_err']
+Aug 14 15:54:46 INFO >> ['freq_sigma_FitGauss_amplitude', 'freq_sigma_FitGauss_mu', 'freq_sigma_FitGauss_gauss_sigma', 'freq_sigma_FitGauss_amplitude_rel_err', 'freq_sigma_FitGauss_mu_rel_err', 'freq_sigma_FitGauss_gauss_sigma_rel_err', 'freq_sigma_FitGauss_amplitude-detection', 'freq_sigma_FitGauss_mu-detection', 'freq_sigma_FitGauss_ndof', 'freq_sigma_FitGauss_rms_err']
+Aug 14 15:54:46 INFO >> Performing searching on cumulative stack 315.95 49.23
+Aug 14 15:54:46 INFO >> Loading the cumulative power spectra stack to search
+Aug 14 15:55:17 INFO >> DM: 107.3817479147
+Aug 14 15:55:17 INFO >> sigma: 11.0
+Aug 14 15:55:17 INFO >> frequency: 8.138748235982394
+Aug 14 15:55:17 INFO >> power pre subtraction = 410.19252008279193
+Aug 14 15:55:17 INFO >> Nsignif = 19
+Aug 14 15:55:17 INFO >> ndays = 11
+Aug 14 15:55:17 INFO >> power after subtraction = 201.19252008279193
+Aug 14 15:55:17 INFO >> sum of scaled_fft = 199.48933844028357
+Aug 14 15:55:17 INFO >> Injecting 62 harmonics.
+Aug 14 15:55:17 INFO >> Starting DM: 94.72126538827945
+Aug 14 15:55:17 INFO >> Stopping DM: 120.02074866506348
+Aug 14 15:55:17 ERROR >> Exception hook activated. Will try to log error to process db.
+Aug 14 15:55:17 INFO >> Pipeline execution time: 0.53 minutes
