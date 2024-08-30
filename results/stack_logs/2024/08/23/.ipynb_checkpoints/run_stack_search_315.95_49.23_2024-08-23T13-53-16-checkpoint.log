@@ -1,0 +1,41 @@
+Aug 23 13:53:16 INFO >> {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "find", "topologyDescription": "<TopologyDescription id: 66c8944c45be7313bdb22547, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "66c8944c45be7313bdb22547"}, "remainingTimeMS": 29}
+Aug 23 13:53:16 INFO >> Features initialized as the following:
+Aug 23 13:53:16 INFO >> num_unique_dms
+Aug 23 13:53:16 INFO >> num_unique_freqs
+Aug 23 13:53:16 INFO >> ndetections
+Aug 23 13:53:16 INFO >> nharm
+Aug 23 13:53:16 INFO >> log_p_dm
+Aug 23 13:53:16 INFO >> ['dm_sigma_FitGaussWidth_gauss_sigma', 'dm_sigma_FitGaussWidth_gauss_sigma_rel_err', 'dm_sigma_FitGaussWidth_ndof', 'dm_sigma_FitGaussWidth_rms_err']
+Aug 23 13:53:16 INFO >> ['dm_sigma_FitGauss_amplitude', 'dm_sigma_FitGauss_mu', 'dm_sigma_FitGauss_gauss_sigma', 'dm_sigma_FitGauss_amplitude_rel_err', 'dm_sigma_FitGauss_mu_rel_err', 'dm_sigma_FitGauss_gauss_sigma_rel_err', 'dm_sigma_FitGauss_amplitude-detection', 'dm_sigma_FitGauss_mu-detection', 'dm_sigma_FitGauss_ndof', 'dm_sigma_FitGauss_rms_err']
+Aug 23 13:53:16 INFO >> ['freq_sigma_FitGaussWidth_gauss_sigma', 'freq_sigma_FitGaussWidth_gauss_sigma_rel_err', 'freq_sigma_FitGaussWidth_ndof', 'freq_sigma_FitGaussWidth_rms_err']
+Aug 23 13:53:16 INFO >> ['freq_sigma_FitGauss_amplitude', 'freq_sigma_FitGauss_mu', 'freq_sigma_FitGauss_gauss_sigma', 'freq_sigma_FitGauss_amplitude_rel_err', 'freq_sigma_FitGauss_mu_rel_err', 'freq_sigma_FitGauss_gauss_sigma_rel_err', 'freq_sigma_FitGauss_amplitude-detection', 'freq_sigma_FitGauss_mu-detection', 'freq_sigma_FitGauss_ndof', 'freq_sigma_FitGauss_rms_err']
+Aug 23 13:53:16 INFO >> Performing searching on cumulative stack 315.95 49.23
+Aug 23 13:53:16 INFO >> Loading the cumulative power spectra stack to search
+Aug 23 13:53:54 INFO >> DM: 107.3817479147
+Aug 23 13:53:54 INFO >> sigma: 11.28372911
+Aug 23 13:53:54 INFO >> frequency: 11.28561557059827
+Aug 23 13:53:54 INFO >> Injecting 45 harmonics.
+Aug 23 13:53:54 INFO >> Starting DM: 98.2631930470292
+Aug 23 13:53:54 INFO >> Stopping DM: 116.47882100631372
+Aug 23 13:53:54 INFO >> Expected detection at 10.50 sigma with 8 harmonics.
+Aug 23 13:53:59 INFO >> Start searching 6558 dm trials using 32 harmonics.
+Aug 23 13:53:59 INFO >> Number of dm trials in single multi processing job: 10
+Aug 23 13:54:47 INFO >> Total number of detections=15873
+Aug 23 13:54:47 INFO >> Clustering the detections
+Aug 23 13:54:47 INFO >> Starting clustering
+Aug 23 13:54:47 INFO >> Rogue harmonic power filter reduced detections from 15873 to 8815
+Aug 23 13:54:47 INFO >> Filtering out duplicate freq,dm detections at multiple nharms removes 921 detections
+Aug 23 13:54:47 INFO >> Duplicate freq,dm filter reduced detections to 7894
+Aug 23 13:54:47 INFO >> Number of detections over threshold sigma (6.0): 7894
+Aug 23 13:54:47 INFO >> Grouping duplicate frequencies together first
+Aug 23 13:54:47 INFO >> Grouping duplicate frequencies removed 7354 detections from the harmonic metric computation
+Aug 23 13:54:47 INFO >> Starting freq-DM distance metric computation
+Aug 23 13:54:48 INFO >> Finished freq-DM distance metric computation
+Aug 23 13:54:48 INFO >> Largest group size for metric computation is 97
+Aug 23 13:54:48 INFO >> Starting harmonic distance metric computation
+Aug 23 13:54:49 INFO >> Finished harmonic distance metric computation
+Aug 23 13:54:49 INFO >> Starting DBSCAN
+Aug 23 13:54:49 INFO >> Finished DBSCAN
+Aug 23 13:54:49 INFO >> Clusters found: 76
+Aug 23 13:54:49 ERROR >> Exception hook activated. Will try to log error to process db.
+Aug 23 13:54:49 INFO >> Pipeline execution time: 1.56 minutes

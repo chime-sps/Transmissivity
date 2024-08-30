@@ -44,8 +44,8 @@ def get(n_injections, file_name, injection_path, focus):
     
     if focus == 'frequency' or focus == 'freq':
         #frequencies = np.logspace(1.8, 2.3, n_injections)
-        frequencies = np.logspace(-2, 2, n_injections)
-        dms = 107.3817479147*np.ones(n_injections)
+        frequencies = np.logspace(1, 2.3, n_injections)
+        dms = 57.3817479147*np.ones(n_injections)
         sigmas = 11.28372911*np.ones(n_injections)
     
     elif focus == 'dm' or focus == 'DM':
@@ -65,7 +65,7 @@ def get(n_injections, file_name, injection_path, focus):
 
     else:
         sigmas = np.random.uniform(6, 17, n_injections)
-        frequencies = np.random.uniform(0.1, 50, n_injections)
+        frequencies = np.random.uniform(10, 200, n_injections)
         dms = np.random.uniform(3, 200, n_injections)
 
     data = []
@@ -83,7 +83,7 @@ def get(n_injections, file_name, injection_path, focus):
 
         print(f"{i}: {n_dict}")
         if injection_path == 'random':
-            n_dict['profile'] = ps_inject.generate().tolist()
+            n_dict['profile'] = ps_inject.generate_pulse().tolist()
 
         else:
             n_dict['profile'] = load_profs[i].tolist()
