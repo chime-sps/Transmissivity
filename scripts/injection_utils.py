@@ -13,8 +13,12 @@ def call(injection_path, ra, dec, ii = None):
 
     subprocess.run(command)
 
-def get_cand_data(ra, dec, date, ndays):
-    path = f'./results/candidates_cumul/{str(ra)}_{str(dec)}_cumulative_power_spectra_stack_{date}_{str(ndays)}_candidates.npz'
+def get_cand_data(ra, dec, date, ndays, inj_path, ii = None):
+    inj_name = inj_path.split('/')[-1]
+    if ii is not None:
+        path = f'./results/injections/{ra}_{dec}_cumulative_power_spectra_stack_{date}_{ndays}_{inj_name}_({ii},)_candidates.npz'
+    else:
+        path = f'./results/injections/{ra}_{dec}_cumulative_power_spectra_stack_{date}_{ndays}_{inj_name}_candidates.npz'
     cands = np.load(path, allow_pickle = True)['candidate_dicts']
     return_list = []
     for cand in cands:
@@ -38,7 +42,7 @@ def run_focus(ra, dec, date, ndays, path, focus, step = 1):
         inj = data[i]
         call(path, ra, dec, ii = i)
         del inj['profile']
-        cands = get_cand_data(ra, dec, date, ndays)
+        cands = get_cand_data(ra, dec, date, ndays, path, ii = i)
         print(f'{len(cands)} candidates returned.')
         injections.append([inj, cands])
         i += step
@@ -61,4 +65,37 @@ def run_focus(ra, dec, date, ndays, path, focus, step = 1):
             multicands.append([injections[i][0], len(injections[i][1])])
 
     return output, multicands
-                
+               
+
+def populate(map_file, ra, dec, date, ndays, path):
+
+
+    injections = []
+
+    with open(path, 'r') as file:
+        data = yaml.safe_load(file)
+
+    for i in range(len(data)):
+        
+        inj = data[i]
+        print(f'Starting injection {i} with f = {inj["frequency"]}, DM = {inj["DM"]}, sigma = {inj["sigma"]}')
+        call(path, ra, dec, ii = i)
+        del inj['profile']
+        cands = get_cand_data(ra, dec, date, ndays, path, ii = i)
+        print(f'{len(cands)} candidates returned.')
+        
+        #grab the true candidate, not a harmonic...
+        f = inj['frequency']
+        freq_closest = np.infty
+        for j in range(len(cands)):
+            if np.abs(cand['freq'] - f) < np.abs(freq_closest - f):
+                freq_closest = cands[j]['freq']
+                closest_idx = j
+
+        with open(map_file, 'a') as file:
+            
+            file.write(f"{inj['frequency']} {inj['DM']}")
+            file.write(f" {cands[closest_idx]['freq']} {cands[closest_idx]['dm']}")
+            file.write(f" {cands[closest_idx]['sigma']/inj['sigma']}\n")
+
+        print('Written to map.')
