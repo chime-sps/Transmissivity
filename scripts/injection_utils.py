@@ -70,8 +70,6 @@ def run_focus(ra, dec, date, ndays, path, focus, step = 1):
 def populate(map_file, ra, dec, date, ndays, path):
 
 
-    injections = []
-
     with open(path, 'r') as file:
         data = yaml.safe_load(file)
 
@@ -87,15 +85,23 @@ def populate(map_file, ra, dec, date, ndays, path):
         #grab the true candidate, not a harmonic...
         f = inj['frequency']
         freq_closest = np.infty
-        for j in range(len(cands)):
-            if np.abs(cand['freq'] - f) < np.abs(freq_closest - f):
-                freq_closest = cands[j]['freq']
-                closest_idx = j
+
+        if len(cands) != 0:
+
+            for j in range(len(cands)):
+                if np.abs(cands[j]['freq'] - f) < np.abs(freq_closest - f):
+                    freq_closest = cands[j]['freq']
+                    closest_idx = j
 
         with open(map_file, 'a') as file:
             
             file.write(f"{inj['frequency']} {inj['DM']}")
-            file.write(f" {cands[closest_idx]['freq']} {cands[closest_idx]['dm']}")
-            file.write(f" {cands[closest_idx]['sigma']/inj['sigma']}\n")
-
+            
+            if len(cands) != 0:
+                file.write(f" {cands[closest_idx]['freq']} {cands[closest_idx]['dm']}")
+                file.write(f" {cands[closest_idx]['sigma']/inj['sigma']}\n")
+            
+            else:
+                file.write("0 0")
+                file.write("0\n")
         print('Written to map.')
