@@ -64,8 +64,8 @@ def get(n_injections, file_name, injection_path, focus):
         sigmas = 11.28372911*np.ones(n_injections)
 
     else:
-        sigmas = np.random.uniform(6, 17, n_injections)
-        frequencies = np.random.uniform(10, 200, n_injections)
+        sigmas = np.random.uniform(10, 17, n_injections)
+        frequencies = np.random.uniform(10, 100, n_injections)
         dms = np.random.uniform(3, 200, n_injections)
 
     data = []
