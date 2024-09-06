@@ -1,3 +1,0 @@
-Aug 28 20:31:34 INFO >> {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "find", "topologyDescription": "<TopologyDescription id: 66cf89268f79c8ecd9e5a354, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "66cf89268f79c8ecd9e5a354"}, "remainingTimeMS": 29}
-Aug 28 20:32:04 ERROR >> Exception hook activated. Will try to log error to process db.
-Aug 28 20:32:05 INFO >> Pipeline execution time: 0.50 minutes
