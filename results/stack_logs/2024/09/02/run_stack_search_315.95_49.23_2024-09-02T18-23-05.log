@@ -1,0 +1,52 @@
+Sep 02 18:23:05 INFO >> {"message": "Waiting for suitable server to become available", "selector": "Primary()", "operation": "find", "topologyDescription": "<TopologyDescription id: 66d6028989b2fb29d6f23b31, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None>]>", "clientId": {"$oid": "66d6028989b2fb29d6f23b31"}, "remainingTimeMS": 29}
+Sep 02 18:23:05 INFO >> Features initialized as the following:
+Sep 02 18:23:05 INFO >> num_unique_dms
+Sep 02 18:23:05 INFO >> num_unique_freqs
+Sep 02 18:23:05 INFO >> ndetections
+Sep 02 18:23:05 INFO >> nharm
+Sep 02 18:23:05 INFO >> log_p_dm
+Sep 02 18:23:05 INFO >> ['dm_sigma_FitGaussWidth_gauss_sigma', 'dm_sigma_FitGaussWidth_gauss_sigma_rel_err', 'dm_sigma_FitGaussWidth_ndof', 'dm_sigma_FitGaussWidth_rms_err']
+Sep 02 18:23:05 INFO >> ['dm_sigma_FitGauss_amplitude', 'dm_sigma_FitGauss_mu', 'dm_sigma_FitGauss_gauss_sigma', 'dm_sigma_FitGauss_amplitude_rel_err', 'dm_sigma_FitGauss_mu_rel_err', 'dm_sigma_FitGauss_gauss_sigma_rel_err', 'dm_sigma_FitGauss_amplitude-detection', 'dm_sigma_FitGauss_mu-detection', 'dm_sigma_FitGauss_ndof', 'dm_sigma_FitGauss_rms_err']
+Sep 02 18:23:05 INFO >> ['freq_sigma_FitGaussWidth_gauss_sigma', 'freq_sigma_FitGaussWidth_gauss_sigma_rel_err', 'freq_sigma_FitGaussWidth_ndof', 'freq_sigma_FitGaussWidth_rms_err']
+Sep 02 18:23:05 INFO >> ['freq_sigma_FitGauss_amplitude', 'freq_sigma_FitGauss_mu', 'freq_sigma_FitGauss_gauss_sigma', 'freq_sigma_FitGauss_amplitude_rel_err', 'freq_sigma_FitGauss_mu_rel_err', 'freq_sigma_FitGauss_gauss_sigma_rel_err', 'freq_sigma_FitGauss_amplitude-detection', 'freq_sigma_FitGauss_mu-detection', 'freq_sigma_FitGauss_ndof', 'freq_sigma_FitGauss_rms_err']
+Sep 02 18:23:06 INFO >> Performing searching on cumulative stack 315.95 49.23
+Sep 02 18:23:06 INFO >> Loading the cumulative power spectra stack to search
+Sep 02 18:24:03 INFO >> DM: 10.430647066578864
+Sep 02 18:24:03 INFO >> sigma: 11.371786521188364
+Sep 02 18:24:03 INFO >> frequency: 56.70844222433703
+Sep 02 18:24:03 INFO >> Injecting 8 harmonics.
+Sep 02 18:24:03 INFO >> Starting DM: 8.601824314106572
+Sep 02 18:24:03 INFO >> Stopping DM: 12.244949905963475
+Sep 02 18:24:03 INFO >> Expected detection at 9.62 sigma with 8 harmonics.
+Sep 02 18:24:17 INFO >> Start searching 6558 dm trials using 32 harmonics.
+Sep 02 18:24:23 INFO >> Moved power spectra to shared memory.
+Sep 02 18:24:23 INFO >> Number of dm trials in single multi processing job: 10
+Sep 02 18:25:03 INFO >> Total number of detections=15590
+Sep 02 18:25:03 INFO >> Clustering the detections
+Sep 02 18:25:03 INFO >> Starting clustering
+Sep 02 18:25:03 INFO >> Rogue harmonic power filter reduced detections from 15590 to 8532
+Sep 02 18:25:03 INFO >> Filtering out duplicate freq,dm detections at multiple nharms removes 787 detections
+Sep 02 18:25:03 INFO >> Duplicate freq,dm filter reduced detections to 7745
+Sep 02 18:25:03 INFO >> Number of detections over threshold sigma (6.0): 7745
+Sep 02 18:25:03 INFO >> Grouping duplicate frequencies together first
+Sep 02 18:25:03 INFO >> Grouping duplicate frequencies removed 7219 detections from the harmonic metric computation
+Sep 02 18:25:03 INFO >> Starting freq-DM distance metric computation
+Sep 02 18:25:03 INFO >> Finished freq-DM distance metric computation
+Sep 02 18:25:04 INFO >> Largest group size for metric computation is 97
+Sep 02 18:25:04 INFO >> Starting harmonic distance metric computation
+Sep 02 18:25:04 INFO >> Finished harmonic distance metric computation
+Sep 02 18:25:04 INFO >> Starting DBSCAN
+Sep 02 18:25:04 INFO >> Finished DBSCAN
+Sep 02 18:25:04 INFO >> Clusters found: 76
+Sep 02 18:25:04 INFO >> Filtered 32 clusters below or equal 2 DM.
+Sep 02 18:25:04 INFO >> Total number of candidate clusters=1
+Sep 02 18:25:05 INFO >> Candidate Processor of stack (315.95 49.23)
+Sep 02 18:25:05 INFO >> Making SinglePointingCandidates from a list of 1 PowerSpectraDetectionClusters
+Sep 02 18:25:07 INFO >> saved candidates to ./results//injections/315.95_49.23_cumulative_power_spectra_stack_20220627_11_tpa.yml_(450,)_candidates.npz
+Sep 02 18:25:07 INFO >> Injected Pulsars:     1
+Sep 02 18:25:07 INFO >> Injection Candidates: 1
+Sep 02 18:25:07 INFO >> Recovered Injections: 1
+Sep 02 18:25:07 INFO >> 1 candidates.
+Sep 02 18:25:07 INFO >> Best candidate: F0: 56.708 DM: 10.42 Sigma: 10.97
+Sep 02 18:25:08 INFO >> Unlinked shared memory for cumulative stack.
+Sep 02 18:25:08 INFO >> Pipeline execution time: 2.05 minutes
