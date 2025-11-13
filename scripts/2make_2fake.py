@@ -1,3 +1,6 @@
+#this is the new version of make_fake.py that takes an npz file as input instead of an npy file
+#use this if you are including width!!!
+
 from ps_processes.processes import ps_inject
 import click
 import yaml
@@ -25,8 +28,8 @@ import numpy as np
 @click.option(
         "--injection-path",
         "--path",
-        default = "random",
-        help = ("Path to injection profile npy file")
+        default = 'TPA_pulses.npz',
+        help = ("Path to injection profile npz file")
 )
 
 @click.option(
@@ -94,7 +97,7 @@ def get(n_injections, file_name, injection_path, focus):
         # alternatively could use float()
         n_dict['frequency'] = frequencies[i].item()
         n_dict['DM'] = dms[i].item()
-        if type(fluxes) == type(None):
+        if fluxes == None:
             n_dict['sigma'] = sigmas[i].item()
         else:
             n_dict['flux'] = fluxes[i].item()
