@@ -35,17 +35,55 @@ import numpy as np
         help = ("Iterates over selected field (sigma, flux, frequency, or DM).")
 )
 
+@click.option(
+        "--tpa_idx",
+        "--i",
+        type = int,
+        default = None,
+        help = ("Index of profile in TPA dataset.")
+)
 
-def get(n_injections, file_name, injection_path, focus):
-    
-    if injection_path != 'random':
+@click.option(
+        "--f",
+        type = float,
+        default = None,
+        help = ("Set frequency.")
+    )
+
+@click.option(
+        "--dm",
+        type = float,
+        default = None,
+        help = ("Set DM.")
+)
+
+@click.option(
+        "--flux",
+        type = float,
+        default = None,
+        help = ("Set flux in mJy.")
+)
+
+def get(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, flux):
+    make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, flux)
+
+def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, flux):
+    if injection_path != 'random' and injection_path not in ['TPA', 'tpa']:
         load_profs = np.load(injection_path)
         if len(load_profs.shape) == 1:
             n_injections = 1
         else:
             n_injections = len(load_profs)
     
-    if focus == 'frequency' or focus == 'freq':
+    if injection_path in ['TPA', 'tpa']:
+        profiles = np.load('/home/squillace/Transmissivity/profiles/smoothed_baselined_TPA_pulses.npy')
+        tpa_idx = np.array(tpa_idx)
+        frequencies = np.array(f)
+        dms = np.array(dm)
+        fluxes = np.array(flux)
+        sigmas = None
+
+    elif focus == 'frequency' or focus == 'freq':
         #frequencies = np.logspace(1.8, 2.3, n_injections)
         frequencies = np.logspace(-2, 2.4, n_injections)
         dms = 57.3817479147*np.ones(n_injections)
@@ -90,7 +128,7 @@ def get(n_injections, file_name, injection_path, focus):
         
         n_dict = {}
 
-        # .item() allows a simpler output in the yanl file
+        # .item() allows a simpler output in the yaml file
         # alternatively could use float()
         n_dict['frequency'] = frequencies[i].item()
         n_dict['DM'] = dms[i].item()
@@ -99,10 +137,12 @@ def get(n_injections, file_name, injection_path, focus):
         else:
             n_dict['flux'] = fluxes[i].item()
 
-        print(f"{i}: {n_dict}")
+        #print(f"{i}: {n_dict}")
         if injection_path == 'random':
             n_dict['profile'] = ps_inject.generate_pulse().tolist()
-
+        
+        elif injection_path in ['TPA', 'tpa']:
+            n_dict['profile'] = profiles[tpa_idx[i]].tolist()
         else:
             if n_injections == 1:
                 n_dict['profile'] = load_profs.tolist()
@@ -110,7 +150,6 @@ def get(n_injections, file_name, injection_path, focus):
                 n_dict['profile'] = load_profs[i].tolist()
         
         data.append(n_dict)
-
     file_name = os.getcwd()+'/'+file_name
     stream = open(file_name, 'w')
     yaml.dump(data, stream)
