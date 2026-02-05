@@ -1,0 +1,183 @@
+Dec 12 16:26:02 INFO >> Used config: sps_config.yml
+Dec 12 16:26:02 INFO >> 2025-08-05
+Dec 12 16:26:02 INFO >> Observation: [ActivePointing(ra=161.91748443691182, dec=2.486515738448739, nchan=1024, ntime=368640, maxdm=123.68771202890088, max_beams=[{'beam': 19, 'utc_start': 1754430389, 'utc_end': 1754430489}, {'beam': 1019, 'utc_start': 1754430489, 'utc_end': 1754430579}, {'beam': 2019, 'utc_start': 1754430579, 'utc_end': 1754430679}, {'beam': 3019, 'utc_start': 1754430679, 'utc_end': 1754430769}], beam_row=19, sub_pointing=0, obs_id='693c421a5bd4bea3b1ec0b58', pointing_id='67dc9937839f2db50c67b05e')]
+Dec 12 16:26:02 INFO >> Processing active_pointing 1 of 1
+Dec 12 16:26:02 INFO >> Using 8 threads to run the parallel codes
+Dec 12 16:26:02 INFO >> Beamform (161.92 2.49) @ 2025-08-05
+Dec 12 16:26:02 INFO >> Transit at: 2025-08-05 21:49:39 UTC
+Dec 12 16:26:02 INFO >> Created arrays.
+Dec 12 16:26:06 INFO >> Data fraction: 0.5907199435763889
+Dec 12 16:26:06 INFO >> Finished loading.
+Dec 12 16:26:06 INFO >> Start RFI cleaning. Current Masking fraction = 0.7015
+Dec 12 16:26:06 INFO >> Spectra are split into 215 chunks for RFI cleaning.
+Dec 12 16:26:07 INFO >> RFI cleaning finished. New masking Fraction: 0.7406
+Dec 12 16:26:07 INFO >> Start filling and normalization.
+Dec 12 16:26:09 INFO >> Finished filling and normalization.
+Dec 12 16:26:10 INFO >> Fraction of completely masked channels: 0.527
+Dec 12 16:26:10 INFO >> Updating Database
+Dec 12 16:26:10 INFO >> Fraction of data masked : 0.743
+Dec 12 16:26:10 INFO >> Beamforming finished.
+Dec 12 16:26:10 INFO >> FDMT Dedispersion (161.92 2.49) @ 2025-08-05
+Dec 12 16:26:10 INFO >> Using C++ FDMT
+Dec 12 16:26:12 INFO >> FDMT Dedispersion (161.92 2.49) completed with 1223 DM steps
+Dec 12 16:26:12 INFO >> Power Spectrum (161.92 2.49) @ 2025-08-05
+Dec 12 16:26:12 INFO >> Calculating barycentric velocity correction
+Dec 12 16:26:12 INFO >> RA (J2000) : 10h47m40.2s
+Dec 12 16:26:12 INFO >> Dec (J2000) : 2d29m11.46s
+Dec 12 16:26:12 INFO >> Topocentric MJD : 60892.90936333526
+Dec 12 16:26:13 INFO >> barycentric velocity (fraction of speed of light) = -4.6590737698304345e-05
+Dec 12 16:26:13 INFO >> Running Periodic RFI Cleaning
+Dec 12 16:26:13 INFO >> Running static periodic signal filter
+Dec 12 16:26:13 INFO >> Gathering known bad frequencies (birdies), barycentering, flagging integer and fractional harmonics
+Dec 12 16:26:13 INFO >> Topo. freq. = 1.5625 Hz Bary. freq. = 1.5625727980276536 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 328
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 25.0 Hz Bary. freq. = 25.001164768442457 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 20
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 417.252 Hz Bary. freq. = 417.2714400784861 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 17.253 Hz Bary. freq. = 17.25380382999751 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 8
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 317.253 Hz Bary. freq. = 317.267781051307 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 367.253 Hz Bary. freq. = 367.2701105881919 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 60 Hz Bary. freq. = 60.0027954442619 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 8
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 90.92 Hz Bary. freq. = 90.92423602987154 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 4
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 117.25254201640686 Hz Bary. freq. = 117.2580048988364 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 217.252333338062 Hz Bary. freq. = 217.26245528453887 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 232.747212673227 Hz Bary. freq. = 232.75805653756268 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 267.2527140627305 Hz Bary. freq. = 267.2651655638305 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 282.7475933978955 Hz Bary. freq. = 282.76076681685436 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 292.25290442506474 Hz Bary. freq. = 292.2665207034764 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 342.25231502205133 Hz Bary. freq. = 342.2682608098872 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 384.5052560791374 Hz Bary. freq. = 384.523170462667 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 392.2526957467199 Hz Bary. freq. = 392.2709710891789 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 467.25229670604074 Hz Bary. freq. = 467.2740663352355 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 473.5028293604652 Hz Bary. freq. = 473.5248902065874 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 492.252487068375 Hz Bary. freq. = 492.27542147488134 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 26.667 Hz Bary. freq. = 26.668242435202203 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 2
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 354.75241020321846 Hz Bary. freq. = 354.7689383797101 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Topo. freq. = 382.74738471955067 Hz Bary. freq. = 382.76521720255687 Hz
+Dec 12 16:26:13 INFO >> Num. integer harmonics to flag = 1
+Dec 12 16:26:13 INFO >> Num. fractional harmonics to flag = 0
+Dec 12 16:26:13 INFO >> Fraction of FFT bins removed = 0.0219517 (2.19517%)
+Dec 12 16:26:13 INFO >> Running dynamic periodic signal filter
+Dec 12 16:26:13 INFO >> Zero-padding time series to size = 1048576
+Dec 12 16:26:14 INFO >> The percentage of data flagged is 3.1435346381256593
+Dec 12 16:26:14 INFO >> Birdie count: 587; Strong birdies: 1
+Dec 12 16:26:14 INFO >> Updating birdie information in database.
+Dec 12 16:26:14 INFO >> Saving zero-DM medians to /home/squillace/Transmissivity/results/2025/08/05/161.92_2.49/zero_dm_medians.npz.
+Dec 12 16:26:14 INFO >> Retrieving common birdies for observation and its surroundings from database
+Dec 12 16:26:14 INFO >> There are no birdies to compare with the observation 693c421a5bd4bea3b1ec0b58. Returning the birdies left and right frequencies of the current observation
+Dec 12 16:26:14 INFO >> The final common birdies list masks 0.031408 of the data
+Dec 12 16:26:14 INFO >> Number of FFT bins flagged = 23730 (0.045261 of data)
+Dec 12 16:26:14 INFO >> Number of threads used for power spectra creation: 8
+Dec 12 16:26:14 INFO >> Number of dm trials in single multi processing job: 10
+Dec 12 16:26:24 INFO >> Power spectra creation successful.
+Dec 12 16:26:24 INFO >> Wrote out birdie info to /home/squillace/Transmissivity/results/2025/08/05/161.92_2.49/birdie_info.npz
+Dec 12 16:26:24 INFO >> Injecting at:
+Dec 12 16:26:24 INFO >> DM: 30.21
+Dec 12 16:26:24 INFO >> frequency: 0.4252
+Dec 12 16:26:24 INFO >> Using flux as input quantity.
+Dec 12 16:26:24 INFO >> Flux = 4.3 mJy.
+Dec 12 16:26:24 INFO >> Injecting 32 harmonics.
+Dec 12 16:26:24 INFO >> Starting DM: 0.0
+Dec 12 16:26:24 INFO >> Stopping DM: 123.66387425692037
+Dec 12 16:26:25 INFO >> Expected detection at 165.70 sigma with 32 harmonics.
+Dec 12 16:26:25 INFO >> Without spectra effects detection would be at 170.56 sigma with 32 harmonics.
+Dec 12 16:26:26 INFO >> Injecting at:
+Dec 12 16:26:26 INFO >> DM: 234.82
+Dec 12 16:26:26 INFO >> frequency: 0.4737
+Dec 12 16:26:26 INFO >> Using flux as input quantity.
+Dec 12 16:26:26 INFO >> Flux = 11.6 mJy.
+Dec 12 16:26:26 INFO >> Injecting 32 harmonics.
+Dec 12 16:26:26 INFO >> Starting DM: 17.507242427534553
+Dec 12 16:26:26 INFO >> Stopping DM: 123.66387425692037
+Dec 12 16:26:26 INFO >> Expected detection at 40.26 sigma with 32 harmonics.
+Dec 12 16:26:26 INFO >> Without spectra effects detection would be at 40.34 sigma with 32 harmonics.
+Dec 12 16:26:28 INFO >> Start searching 1223 dm trials using 32 harmonics.
+Dec 12 16:26:28 INFO >> Number of dm trials in single multi processing job: 10
+Dec 12 16:27:27 INFO >> Total number of detections=651981
+Dec 12 16:27:27 INFO >> Clustering the detections
+Dec 12 16:27:27 INFO >> Starting clustering
+Dec 12 16:27:30 INFO >> Rogue harmonic power filter reduced detections from 651981 to 281374
+Dec 12 16:27:32 INFO >> Filtering out duplicate freq,dm detections at multiple nharms removes 76803 detections
+Dec 12 16:27:32 INFO >> Duplicate freq,dm filter reduced detections to 204571
+Dec 12 16:27:32 INFO >> Running dbscan filter
+Dec 12 16:27:45 INFO >> Dbscan filter removed 0 detections in low DM clusters.
+Dec 12 16:27:45 INFO >> Dbscan filter removed 78319 detections in broad DM clusters.
+Dec 12 16:27:45 INFO >> Filtered 78319 from low or broad clusters.
+Dec 12 16:27:45 INFO >> Dbscan filter removed additonal 309 detection with same frequencies as already filtered DM clusters.
+Dec 12 16:27:45 INFO >> Number of detections over threshold sigma (5.0): 125943
+Dec 12 16:27:46 INFO >> Grouping duplicate frequencies together first
+Dec 12 16:27:47 INFO >> Grouping duplicate frequencies removed 123992 detections from the harmonic metric computation
+Dec 12 16:27:47 INFO >> Starting freq-DM distance metric computation
+Dec 12 16:27:50 INFO >> Finished freq-DM distance metric computation
+Dec 12 16:27:51 INFO >> Largest group size for metric computation is 1642
+Dec 12 16:27:51 INFO >> Starting harmonic distance metric computation
+Dec 12 16:29:17 INFO >> Updating grouped frequencies.
+Dec 12 16:29:31 INFO >> Finished harmonic distance metric computation
+Dec 12 16:29:37 INFO >> Starting DBSCAN
+Dec 12 16:29:43 INFO >> Finished DBSCAN
+Dec 12 16:29:43 INFO >> Clusters found: 26
+Dec 12 16:29:43 INFO >> Total number of candidate clusters=6
+Dec 12 16:29:43 INFO >> Features initialized as the following:
+Dec 12 16:29:43 INFO >> num_unique_dms
+Dec 12 16:29:43 INFO >> num_unique_freqs
+Dec 12 16:29:43 INFO >> ndetections
+Dec 12 16:29:43 INFO >> nharm
+Dec 12 16:29:43 INFO >> log_p_dm
+Dec 12 16:29:43 INFO >> ['dm_sigma_FitGaussWidth_gauss_sigma', 'dm_sigma_FitGaussWidth_gauss_sigma_rel_err', 'dm_sigma_FitGaussWidth_ndof', 'dm_sigma_FitGaussWidth_rms_err']
+Dec 12 16:29:43 INFO >> ['dm_sigma_FitGauss_amplitude', 'dm_sigma_FitGauss_mu', 'dm_sigma_FitGauss_gauss_sigma', 'dm_sigma_FitGauss_amplitude_rel_err', 'dm_sigma_FitGauss_mu_rel_err', 'dm_sigma_FitGauss_gauss_sigma_rel_err', 'dm_sigma_FitGauss_amplitude-detection', 'dm_sigma_FitGauss_mu-detection', 'dm_sigma_FitGauss_ndof', 'dm_sigma_FitGauss_rms_err']
+Dec 12 16:29:43 INFO >> ['freq_sigma_FitGaussWidth_gauss_sigma', 'freq_sigma_FitGaussWidth_gauss_sigma_rel_err', 'freq_sigma_FitGaussWidth_ndof', 'freq_sigma_FitGaussWidth_rms_err']
+Dec 12 16:29:43 INFO >> ['freq_sigma_FitGauss_amplitude', 'freq_sigma_FitGauss_mu', 'freq_sigma_FitGauss_gauss_sigma', 'freq_sigma_FitGauss_amplitude_rel_err', 'freq_sigma_FitGauss_mu_rel_err', 'freq_sigma_FitGauss_gauss_sigma_rel_err', 'freq_sigma_FitGauss_amplitude-detection', 'freq_sigma_FitGauss_mu-detection', 'freq_sigma_FitGauss_ndof', 'freq_sigma_FitGauss_rms_err']
+Dec 12 16:29:43 INFO >> Candidate Processor (161.92 2.49) @ 2025-08-05
+Dec 12 16:29:43 INFO >> Making SinglePointingCandidates from a list of 6 PowerSpectraDetectionClusters
+Dec 12 16:29:47 INFO >> saved candidates to /home/squillace/Transmissivity/results/injections/candidates/161.92_2.49_0_flux_validation.yaml_()_power_spectra_candidates.npz
+Dec 12 16:29:47 INFO >> Injected Pulsars:     2
+Dec 12 16:29:47 INFO >> Injection Candidates: 6
+Dec 12 16:29:47 INFO >> Recovered Injections: 1
+Dec 12 16:29:47 INFO >> Creating candidates plots.
+Dec 12 16:29:50 INFO >> Plotted 6 candidate plots.
+Dec 12 16:29:50 INFO >> 6 candidates.
+Dec 12 16:29:50 INFO >> Best candidate: F0: 7.228 DM: 30.26 Sigma: 44.72
+Dec 12 16:29:51 INFO >> Cleanup (161.92 2.49) @ 2025-08-05
+Dec 12 16:29:51 INFO >> Pipeline execution time: 3.82 minutes

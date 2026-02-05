@@ -1,0 +1,12 @@
+Dec 19 23:48:51 INFO >> Used config: sps_config.yml
+Dec 19 23:48:51 INFO >> 2025-10-31
+Dec 19 23:48:51 INFO >> Observation: [ActivePointing(ra=70.87926938871193, dec=31.555838145988936, nchan=2048, ntime=450560, maxdm=346.9151794147188, max_beams=[{'beam': 82, 'utc_start': 1761904867, 'utc_end': 1761904977}, {'beam': 1082, 'utc_start': 1761904977, 'utc_end': 1761905087}, {'beam': 2082, 'utc_start': 1761905087, 'utc_end': 1761905207}, {'beam': 3082, 'utc_start': 1761905207, 'utc_end': 1761905317}], beam_row=82, sub_pointing=0, obs_id='6945e4634d114ecf86317252', pointing_id='67dc9938839f2db50c68b46a')]
+Dec 19 23:48:51 INFO >> Processing active_pointing 1 of 1
+Dec 19 23:48:51 INFO >> Using 16 threads to run the parallel codes
+Dec 19 23:48:51 INFO >> Beamform (70.88 31.56) @ 2025-10-31
+Dec 19 23:48:51 INFO >> Transit at: 2025-10-31 10:04:52 UTC
+Dec 19 23:48:53 INFO >> Created arrays.
+Dec 19 23:48:59 INFO >> Data fraction: 0.0
+Dec 19 23:48:59 ERROR >> Data Fraction below 0.5
+Dec 19 23:49:00 INFO >> Cleanup (70.88 31.56) @ 2025-10-31
+Dec 19 23:49:00 INFO >> Pipeline execution time: 0.16 minutes
