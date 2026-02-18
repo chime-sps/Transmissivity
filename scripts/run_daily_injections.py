@@ -1,30 +1,40 @@
 import numpy as np
-from ps_processes.processes.ps_stack import PowerSpectraStack
-from ps_processes.processes.ps_inject import Injection
-from sps_common.interfaces import PowerSpectra, DedispersedTimeSeries
-from sps_pipeline.processing import find_active_pointings
-from ps_processes.processes.ps import PowerSpectraCreation
 import logging as log
-from sps_common.interfaces.utilities import harmonic_sum, powersum_at_sigma, sigma_sum_powers
 import yaml
 import matplotlib.pyplot as plt
-from sps_common.constants import FREQ_TOP, FREQ_BOTTOM, TSAMP, DM_CONSTANT
-from sps_databases import db_api, db_utils
-import beamformer.skybeam as bs
-from sps_dedispersion.dedisperse import dedisperse
-from dmt.libdmt import FDMT
+from itertools import islice, cycle
 from matplotlib.colors import LogNorm
 from scipy.special import erf
 import click
 import os
-import make_fake
-from beamformer.utilities.common import find_closest_pointing, get_data_list
-from beamformer.strategist.strategist import PointingStrategist
-from sps_databases import db_api, db_utils
 import datetime
 from multiprocessing import Pool
 from functools import partial
 import traceback 
+
+import make_fake
+
+from sps_common.interfaces import PowerSpectra, DedispersedTimeSeries
+from sps_common.interfaces.utilities import harmonic_sum, powersum_at_sigma, sigma_sum_powers
+from sps_common.constants import FREQ_TOP, FREQ_BOTTOM, TSAMP, DM_CONSTANT
+
+import sps_pipeline
+from sps_pipeline.processing import find_active_pointings
+
+from ps_processes.processes.ps import PowerSpectraCreation
+from ps_processes.processes.ps_stack import PowerSpectraStack
+from ps_processes.processes.ps_inject import Injection
+
+from scheduler.workflow import schedule_workflow_job, remove_finished_service
+
+from sps_databases import db_api, db_utils
+
+import beamformer.skybeam as bs
+from beamformer.utilities.common import find_closest_pointing, get_data_list
+from beamformer.strategist.strategist import PointingStrategist
+
+from sps_dedispersion.dedisperse import dedisperse
+from dmt.libdmt import FDMT
 
 def get_max_dm(ra, dec):
     db_mode = 'database'
@@ -124,7 +134,6 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
     os.system(f'run-pipeline --date {date} --db-host sps-archiver1 --db-port 27017 \
             --db-name squillace --datpath /mnt/beegfs-client/raw/ \
             --injection-path {temp_path} --only-injections {str(ra)} {dec_string}') 
-
     try:
         cands = np.load(cand_path, allow_pickle = True)
         print('Loaded candidate file.')
@@ -213,14 +222,16 @@ def inject(date, N, pointing, seed):
             print(f"An error occurred: {e}")
             traceback.print_exc() 
 
-date = 20251116
+date = 20251119
 pointings = np.load(f'{date}_pointings.npy')
 print('Loaded pointings.')
 num_workers = 5
-num_jobs = len(pointings[15:])
+num_jobs = len(pointings[10:])
 seeds = np.random.SeedSequence(42).spawn(num_jobs)
+
+
 with Pool(num_workers) as pool:
-    output = pool.starmap(partial(inject, date, 10), zip(pointings[15:], seeds))
+    output = pool.starmap(partial(inject, date, 10), zip(pointings[:10], seeds))
 #pool = Pool(5)
 #output = pool.map(partial(inject, date, 10), pointings[:10])
 
