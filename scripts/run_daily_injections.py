@@ -111,7 +111,7 @@ def get_injections(N, maxdm, rng=None):
     
     return prof_idx, f, dm, S
 
-def call_and_retrieve(pointing, docker_name, date, ii, prof_idx, f, dm, S):
+def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
     year = str(date)[:4]
     month = str(date)[4:6]
     day = str(date)[6:]
@@ -131,38 +131,9 @@ def call_and_retrieve(pointing, docker_name, date, ii, prof_idx, f, dm, S):
     else:
         dec_string = str(dec)
     print('Running call.') 
-    #os.system(f'run-pipeline --date {date} --db-host sps-archiver1 --db-port 27017 \
-    #        --db-name squillace --datpath /mnt/beegfs-client/raw/ \
-    #        --injection-path {temp_path} --only-injections {str(ra)} {dec_string}') 
-    docker_image = 'archiver1.chime:5000/champss_software:main'
-    workflow_params = {'date': date,
-                       'ra': ra,
-                       'dec': dec_string,
-                       'db-host': 'sps-archiver1',
-                       'db-port': '27017',
-                       'db-name': 'squillace',
-                       'datpath': '/mnt/beegfs-client/raw',
-                       'injection_path': temp_path,
-                       'only-injections': 'True',
-                       }
-
-    mp_timeout = 60 * 60 * 6
-    service_id = schedule_workflow_job(
-            docker_image = docker_image,
-            docker_mounts = ['/mnt/beegfs-client/raw:/mnt/beegfs-client/raw'],
-            docker_name = docker_name, #unique for each thread
-            docker_memory_reservation = 40,
-            workflow_buckets_name = 'injections',
-            workflow_function = sps_pipeline.pipeline.main, 
-            workflow_params = workflow_params,
-            workflow_user = "CHAMPSS",
-            workflow_tags = ["mp", date],
-            timeout=mp_timeout,
-            return_service_id=True
-            )
-
-    remove_finished_service(service_id)
-
+    os.system(f'run-pipeline --date {date} --db-host sps-archiver1 --db-port 27017 \
+            --db-name squillace --datpath /mnt/beegfs-client/raw/ \
+            --injection-path {temp_path} --only-injections {str(ra)} {dec_string}') 
     try:
         cands = np.load(cand_path, allow_pickle = True)
         print('Loaded candidate file.')
@@ -215,7 +186,7 @@ def call_and_retrieve(pointing, docker_name, date, ii, prof_idx, f, dm, S):
 
     return
         
-def inject(date, N, pointing, seed, docker_name):
+def inject(date, N, pointing, seed):
     ra = pointing[0]
     dec = pointing[1]
     #mode = 'database'
@@ -238,7 +209,7 @@ def inject(date, N, pointing, seed, docker_name):
 
     try:
         #all run in block in same call        
-        call_and_retrieve(pointing, docker_name, date, main_injection_idx, prof_idx, f, dm, S)
+        call_and_retrieve(pointing, date, main_injection_idx, prof_idx, f, dm, S)
     except Exception as e:
         print(f"An error occurred: {e}")
         traceback.print_exc() 
@@ -246,7 +217,7 @@ def inject(date, N, pointing, seed, docker_name):
     for ii in separate_injection_idx:
         try:    
             #run individually to avoid clustering issues
-            call_and_retrieve(pointing, date, docker_name, np.array([ii]), prof_idx, f, dm, S)
+            call_and_retrieve(pointing, date, np.array([ii]), prof_idx, f, dm, S)
         except Exception as e:
             print(f"An error occurred: {e}")
             traceback.print_exc() 
@@ -258,11 +229,9 @@ num_workers = 5
 num_jobs = len(pointings[10:])
 seeds = np.random.SeedSequence(42).spawn(num_jobs)
 
-docker_names = ['thread1', 'thread2', 'thread3', 'thread4', 'thread5']
-docker_names_cycled = list(islice(cycle(docker_names), num_jobs))
 
 with Pool(num_workers) as pool:
-    output = pool.starmap(partial(inject, date, 10), zip(pointings[:10], seeds, docker_names_cycled))
+    output = pool.starmap(partial(inject, date, 10), zip(pointings[:10], seeds))
 #pool = Pool(5)
 #output = pool.map(partial(inject, date, 10), pointings[:10])
 
