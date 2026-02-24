@@ -11,6 +11,7 @@ import datetime
 from multiprocessing import Pool
 from functools import partial
 import traceback 
+import shutil
 
 import make_fake
 
@@ -144,12 +145,17 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
     output[:, 0:3] = np.array([ra, dec, date])[np.newaxis, :]
 
     cand_freqs = []
+    cand_idx = []
     for i in range(cands['cand_count'].item()):
         cand = cands[f'candidate_{i}'].item()
         cand_freqs.append(cand['freq'])
+        if cand['injection']:
+            cand_idx.append(cand['injection_dict']['injection_index'])
+        else:
+            cand_idx.append(-1)
 
     cand_freqs = np.asarray(cand_freqs)
-
+    cand_idx = np.asarray(cand_idx)
     if len(cand_freqs) > 0:
         print(f'Candidate frequencies are {[np.round(i, 3) for i in cand_freqs]} Hz.')
     
@@ -159,20 +165,22 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
         output[i, 3:10] = (prof_idx[ii[i]], inj['frequency'], inj['DM'], inj['flux'], 0.1, inj['predicted_sigma'], inj['predicted_nharm'])
         
         if len(cand_freqs) > 0:
+            same_injection = np.where(cand_idx == i)[0]
             closest_match = np.argmin(np.abs(cand_freqs - f[ii[i]])) 
-            #limit by absolute frequency error rather than relative for first run
-            if np.abs(cand_freqs[closest_match] - f[ii[i]]) <= 0.01: 
+            #if np.abs(cand_freqs[closest_match] - f[ii[i]]) <= 0.01: 
+            if closest_match in same_injection:
                 cand = cands[f'candidate_{closest_match}'].item()
                 output[i, 10:14] = (cand['sigma'], cand['features'].item()[3], cand['freq'], cand['dm'])
                 print(f'Matched candidate with frequency {cand_freqs[closest_match]:.3f} to injection with frequency {f[ii[i]]:.3f}.')
-
             else:
                 output[i, 10:14] = -1 * np.ones(4)
-                print(f'Did not find a match for injection with f = {f[ii[i]]:.3f}, DM = {dm[ii[i]]:.2f}, and S = {S[ii[i]]:.2f}.')
+                print(f'There may be something concerning going on with f = {f[ii[i]]:.3f}, DM = {dm[ii[i]]:.2f}, and S = {S[ii[i]]:.2f}.')
+
         else:
             output[i, 10:14] = -1 * np.ones(4)
+            print(f'Did not find a match for injection with f = {f[ii[i]]:.3f}, DM = {dm[ii[i]]:.2f}, and S = {S[ii[i]]:.2f}.')
         
-    outfile = '/home/squillace/Transmissivity/results/all_real_output.txt'
+    outfile = '/home/squillace/Transmissivity/results/better_retrieval_output.txt'
 
     #RA, Dec, Date, TPA_idx, f, DM, flux, fwhm, predicted_sigma, predicted_nharm, output_sigma, output_nharm, output_f, output_dm
     with open(outfile, 'a') as f:
@@ -181,8 +189,8 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
                 f.write(f'{item} ')
             f.write('\n')
 
-    os.system(f"cp {cand_path} /mnt/beegfs-client/injections/{ra}_{dec}_{date}_cands_{ii}.npz")
-    os.system(f"rm {temp_path}")
+    shutil.move(cand_path, f'/mnt/beegfs-client/injections/{ra}_{dec}_{date}_cands_{ii}.npz')
+    os.remove(temp_path)
 
     return
         
@@ -231,7 +239,7 @@ seeds = np.random.SeedSequence(42).spawn(num_jobs)
 
 
 with Pool(num_workers) as pool:
-    output = pool.starmap(partial(inject, date, 10), zip(pointings[:10], seeds))
+    output = pool.starmap(partial(inject, date, 10), zip(pointings[10:], seeds))
 #pool = Pool(5)
 #output = pool.map(partial(inject, date, 10), pointings[:10])
 
