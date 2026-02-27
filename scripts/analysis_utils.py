@@ -1,6 +1,53 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter
 plt.rcParams.update({'font.size': 14})
+
+def get_sensitivity(full_data, col, bins, gauss_dev, predicted = False):
+
+    arr_injected, arr_retrieved = get_density1d(full_data, col, bins, predicted = predicted)
+
+    arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
+    arr_ret_smooth = gaussian_filter(arr_retrieved, gauss_dev)
+
+    arr_inj_p_smooth = arr_inj_smooth / np.sum(arr_inj_smooth)
+    arr_ret_p_smooth = arr_ret_smooth / arr_inj_smooth
+
+    arr_ret_p = arr_retrieved / arr_injected
+    
+    nan_mask = np.isnan(arr_ret_p)
+    x = np.arange(len(arr_ret_p))
+    arr_ret_p[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], arr_ret_p[~nan_mask])
+
+    arr_ret_p_smooth[np.isnan(arr_ret_p_smooth)] = 0.
+
+    return arr_inj_p_smooth, arr_ret_p, arr_ret_p_smooth
+
+def get_density1d(full_data, col, bins, type = 'retrieved', predicted = False):
+
+    injected_density, _ = np.histogram(full_data[:, col], bins = bins)
+
+    if predicted:
+        retrieved_mask = full_data[:, 5] > 6. #index is awkwardly hard-coded...
+        retrieved_density, _ = np.histogram(full_data[retrieved_mask][:, col], 
+                                              bins=bins)
+
+        return injected_density, retrieved_density
+        
+    if type == 'retrieved':
+        retrieved_mask = full_data[:, -1] > 0.
+        retrieved_density, _ = np.histogram(full_data[retrieved_mask][:, col], 
+                                              bins=bins)
+
+        return injected_density, retrieved_density
+    
+    elif type == 'missed':
+        sigma_mask = full_data[:, 8] > 6. #threshold for candidates 
+        missed_mask = full_data[:, -1] < 0. 
+        should_have_detected = full_data[sigma_mask & missed_mask]
+        missed_density, _ = np.histogram(should_have_detected[:, col], 
+                                              bins=bins)
+        return injected_density, missed_density
 
 def get_density2d(full_data, col1, col2, bins1, bins2, type = 'retrieved'):
 
