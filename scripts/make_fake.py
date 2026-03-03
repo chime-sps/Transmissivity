@@ -116,6 +116,7 @@ def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, fl
         sigmas = None
 
     else:
+        profiles = np.load('/home/squillace/Transmissivity/profiles/smoothed_baselined_TPA_pulses.npy')
         sigmas = np.random.uniform(10, 17, n_injections)
         frequencies = np.random.uniform(10, 100, n_injections)
         dms = np.random.uniform(3, 200, n_injections)
@@ -139,7 +140,9 @@ def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, fl
 
         #print(f"{i}: {n_dict}")
         if injection_path == 'random':
-            n_dict['profile'] = ps_inject.generate_pulse().tolist()
+            tpa_idx = np.random.choice(range(len(profiles)))
+            print(f'Your randomly assigned TPA index is {tpa_idx}.')
+            n_dict['profile'] = profiles[tpa_idx].tolist()
         
         elif injection_path in ['TPA', 'tpa']:
             n_dict['profile'] = profiles[tpa_idx[i]].tolist()
