@@ -3,9 +3,28 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 plt.rcParams.update({'font.size': 14})
 
-def get_sensitivity(full_data, col, bins, gauss_dev, predicted = False):
+def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False):
 
-    arr_injected, arr_retrieved = get_density1d(full_data, col, bins, predicted = predicted)
+    if stype in ['1d', '1', '1D', 1]:
+        col, bins, gauss_dev = P
+        arr_injected, arr_retrieved = get_density1d(full_data,
+                                                    col, 
+                                                    bins, 
+                                                    def_retrieval = def_retrieval,
+                                                    predicted = predicted)
+    elif stype in ['2d', '2', '2D', 2]:
+        col1, col2, bins1, bins2, dev1, dev2 = P
+        gauss_dev = (dev1, dev2)
+        arr_injected, arr_retrieved = get_density2d(full_data,
+                                                    col1,
+                                                    col2,
+                                                    bins1,
+                                                    bins2,
+                                                    def_retrieval = def_retrieval)
+        
+    else:
+        print(f'stype was not a valid input.')
+        return
 
     arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
     arr_ret_smooth = gaussian_filter(arr_retrieved, gauss_dev)
@@ -15,15 +34,19 @@ def get_sensitivity(full_data, col, bins, gauss_dev, predicted = False):
 
     arr_ret_p = arr_retrieved / arr_injected
     
-    nan_mask = np.isnan(arr_ret_p)
-    x = np.arange(len(arr_ret_p))
-    arr_ret_p[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], arr_ret_p[~nan_mask])
+    shape = arr_ret_p.shape
+    flat = arr_ret_p.flatten()
+    nan_mask = np.isnan(flat)
+    x = np.arange(len(flat))
+    flat[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], flat[~nan_mask])
+    arr_ret_p = flat.reshape(shape)
 
     arr_ret_p_smooth[np.isnan(arr_ret_p_smooth)] = 0.
 
     return arr_inj_p_smooth, arr_ret_p, arr_ret_p_smooth
 
-def get_density1d(full_data, col, bins, type = 'retrieved', predicted = False):
+def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
+                  predicted = False):
 
     injected_density, _ = np.histogram(full_data[:, col], bins = bins)
 
@@ -34,14 +57,19 @@ def get_density1d(full_data, col, bins, type = 'retrieved', predicted = False):
 
         return injected_density, retrieved_density
         
-    if type == 'retrieved':
-        retrieved_mask = full_data[:, -1] > 0.
+    if dtype == 'retrieved':
+        if def_retrieval == 'all':
+            retrieved_mask = full_data[:, -1] > 0.
+        elif def_retrieval in ['first', '1', 1]:
+            mask1 = full_data[:, -1] > 0
+            mask2 = np.abs(full_data[:, -2] - full_data[:, 4]) / full_data[:, 4] < 0.05
+            retrieved_mask = mask1 & mask2
         retrieved_density, _ = np.histogram(full_data[retrieved_mask][:, col], 
                                               bins=bins)
 
         return injected_density, retrieved_density
     
-    elif type == 'missed':
+    elif dtype == 'missed':
         sigma_mask = full_data[:, 8] > 6. #threshold for candidates 
         missed_mask = full_data[:, -1] < 0. 
         should_have_detected = full_data[sigma_mask & missed_mask]
@@ -49,7 +77,8 @@ def get_density1d(full_data, col, bins, type = 'retrieved', predicted = False):
                                               bins=bins)
         return injected_density, missed_density
 
-def get_density2d(full_data, col1, col2, bins1, bins2, type = 'retrieved'):
+def get_density2d(full_data, col1, col2, bins1, bins2, def_retrieval = 'all',
+                  type = 'retrieved'):
 
     bin_edges = [bins1, bins2]
 
@@ -58,7 +87,12 @@ def get_density2d(full_data, col1, col2, bins1, bins2, type = 'retrieved'):
     injected_density, _ = np.histogramdd(full_data[:, cols], bins=bin_edges)
 
     if type == 'retrieved':
-        retrieved_mask = full_data[:, -1] > 0.
+        if def_retrieval == 'all':
+            retrieved_mask = full_data[:, -1] > 0.
+        elif def_retrieval in ['first', '1', 1]:
+            mask1 = full_data[:, -1] > 0
+            mask2 = np.abs(full_data[:, -2] - full_data[:, 4]) / full_data[:, 4] < 0.05
+            retrieved_mask = mask1 & mask2
         retrieved_density, _ = np.histogramdd(full_data[retrieved_mask][:, cols], 
                                               bins=bin_edges)
 
