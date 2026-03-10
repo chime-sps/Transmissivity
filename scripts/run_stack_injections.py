@@ -83,7 +83,7 @@ def get_injections(N, maxdm, rng=None):
     dm_linear = np.linspace(0, maxdm, int(0.4*N))
     dm = np.concatenate([dm_dist, dm_linear])
     
-    S_choices = np.logspace(-2, 1, 10000)
+    S_choices = np.logspace(-3, 1, 10000)
     S = rng.choice(S_choices, N)
     
     return prof_idx, f, dm, S
