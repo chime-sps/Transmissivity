@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 plt.rcParams.update({'font.size': 14})
 
+# def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
+#                   predicted = False)
+    
 def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False):
 
     if stype in ['1d', '1', '1D', 1]:
@@ -45,6 +48,47 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
 
     return arr_inj_p_smooth, arr_ret_p, arr_ret_p_smooth
 
+def get_blindspots(full_data, *P, stype = '1d'):
+
+    if stype in ['1d', '1', '1D', 1]:
+        col, bins, gauss_dev = P
+        arr_injected, arr_missed = get_density1d(full_data,
+                                                    col, 
+                                                    bins, 
+                                                    stype = 'missed')
+    elif stype in ['2d', '2', '2D', 2]:
+        col1, col2, bins1, bins2, dev1, dev2 = P
+        gauss_dev = (dev1, dev2)
+        arr_injected, arr_missed = get_density2d(full_data,
+                                                    col1,
+                                                    col2,
+                                                    bins1,
+                                                    bins2,
+                                                    stype = 'missed')
+        
+    else:
+        print(f'stype was not a valid input.')
+        return
+
+    arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
+    arr_mis_smooth = gaussian_filter(arr_missed, gauss_dev)
+
+    arr_inj_p_smooth = arr_inj_smooth / np.sum(arr_inj_smooth)
+    arr_mis_p_smooth = arr_mis_smooth / arr_inj_smooth
+
+    arr_mis_p = arr_missed / arr_injected
+    
+    shape = arr_mis_p.shape
+    flat = arr_mis_p.flatten()
+    nan_mask = np.isnan(flat)
+    x = np.arange(len(flat))
+    flat[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], flat[~nan_mask])
+    arr_mis_p = flat.reshape(shape)
+
+    arr_mis_p_smooth[np.isnan(arr_mis_p_smooth)] = 0.
+
+    return arr_inj_p_smooth, arr_mis_p, arr_mis_p_smooth
+
 def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
                   predicted = False):
 
@@ -78,15 +122,14 @@ def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'al
         return injected_density, missed_density
 
 def get_density2d(full_data, col1, col2, bins1, bins2, def_retrieval = 'all',
-                  type = 'retrieved'):
+                  stype = 'retrieved'):
 
     bin_edges = [bins1, bins2]
 
     cols = [col1, col2]
 
-    injected_density, _ = np.histogramdd(full_data[:, cols], bins=bin_edges)
-
-    if type == 'retrieved':
+    if stype == 'retrieved':
+        injected_density, _ = np.histogramdd(full_data[:, cols], bins=bin_edges)
         if def_retrieval == 'all':
             retrieved_mask = full_data[:, -1] > 0.
         elif def_retrieval in ['first', '1', 1]:
@@ -98,10 +141,12 @@ def get_density2d(full_data, col1, col2, bins1, bins2, def_retrieval = 'all',
 
         return injected_density, retrieved_density
     
-    elif type == 'missed':
+    elif stype == 'missed':
         sigma_mask = full_data[:, 8] > 6. #threshold for candidates 
         missed_mask = full_data[:, -1] < 0. 
         should_have_detected = full_data[sigma_mask & missed_mask]
+        injected_density, _ = np.histogramdd(full_data[sigma_mask][:, cols], 
+                                             bins=bin_edges)
         missed_density, _ = np.histogramdd(should_have_detected[:, cols], 
                                               bins=bin_edges)
         return injected_density, missed_density

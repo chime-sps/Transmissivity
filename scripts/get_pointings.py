@@ -43,7 +43,7 @@ def get_pointings(day, full_transit, db_name, db_host, db_port, beams):
 
     return active_pointings
 
-date_path = '/mnt/beegfs-client/raw/2025/11/16'
+date_path = '/mnt/beegfs-client/raw/2025/11/13'
 db_mode = 'database'
 db_host = 'sps-archiver1'
 db_name = 'test'
@@ -56,4 +56,4 @@ pointings = np.zeros((len(active_pointings), 3))
 for i in range(len(active_pointings)):
     pointings[i] = np.array([active_pointings[i].ra, active_pointings[i].dec, active_pointings[i].sub_pointing])
 
-np.save('20251116_pointings.npy', pointings)
+np.save('20251113_pointings.npy', pointings)
