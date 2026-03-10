@@ -61,31 +61,6 @@ def load_pspec(file_path):
     
     return pspec
 
-def get_injections(N, maxdm):
-    
-    f_nyquist = 508
-    TPA_profiles = np.load(f'{transmissivity_repo_path}/profiles/smoothed_baselined_TPA_pulses.npy')
-    prof_idx = np.random.choice(range(len(TPA_profiles)), N)
-
-    f_dist = np.loadtxt(f'{transmissivity_repo_path}/scripts/atnf_freqs.txt', usecols = [1])
-    f_log = np.logspace(-3, 2.7, int((4/6)*len(f_dist)))
-    f_choices = np.concatenate([f_dist, f_log]) 
-    f_choices = f_choices[f_choices < f_nyquist]
-    f = np.random.choice(f_choices, size = N)
-    
-    dm_spread = np.linspace(0, maxdm, 10000)
-    dm_weights = dm_distribution(dm_spread, 24, 24, 0.02)
-    #24 is chosen as the maximum DM value at b = 90 deg from NE2001
-    dm_dist = np.random.choice(dm_spread, size = int(0.6*N), p = dm_weights)
-    dm_linear = np.linspace(0, maxdm, int(0.4*N))
-    dm = np.concatenate([dm_dist, dm_linear])
-    
-    S_choices = np.logspace(-2, 1, 10000)
-    S = np.random.choice(S_choices, N)
-
-
-    return prof_idx, f, dm, S
-
 def get_injections(N, maxdm, rng=None):
     
     if rng is None:
@@ -95,7 +70,7 @@ def get_injections(N, maxdm, rng=None):
     TPA_profiles = np.load(f'{transmissivity_repo_path}/profiles/smoothed_baselined_TPA_pulses.npy')
     prof_idx = rng.choice(range(len(TPA_profiles)), N)
     
-    f_dist = np.loadtxt('atnf_freqs.txt', usecols=[1])
+    f_dist = np.loadtxt(f'{transmissivity_repo_path}/scripts/atnf_freqs.txt', usecols=[1])
     f_log = np.logspace(-3, 2.7, int((4/6)*len(f_dist)))
     f_choices = np.concatenate([f_dist, f_log])
     f_choices = f_choices[f_choices < f_nyquist]
@@ -113,7 +88,7 @@ def get_injections(N, maxdm, rng=None):
     
     return prof_idx, f, dm, S
 
-def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
+def call_and_retrieve(pointing, ii, prof_idx, f, dm, S):
     ra = np.round(pointing[0], 2)
     dec = np.round(pointing[1], 2)
     sub_pointing = int(pointing[2])
@@ -122,7 +97,7 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
     temp_path = f'{transmissivity_repo_path}/scripts/inj_{instant_time}_{period_string}_{ra}_{dec}.yaml'
     make_fake.make_yaml(len(ii), temp_path, 'tpa', None, prof_idx[ii], f[ii], dm[ii], S[ii])
     print('Made fakes.')
-    cand_path = f'{cand_directory_path}/{N_days}/{ra:.2f}_{dec:.2f}_{sub_pointing}_{injection_path.split('/')[-1]}_{str(injection_idx).replace(' ', '')}_{period_string}_injection_candidates.npz'
+    cand_path = f'{cand_directory_path}/{ra:.2f}_{dec:.2f}_{sub_pointing}_{injection_path.split('/')[-1]}_{str(injection_idx).replace(' ', '')}_{period_string}_injection_candidates.npz'
     print(f'cand path: {cand_path}')
     print('Attempting to inject.')
     if dec < 0:
@@ -132,11 +107,10 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
     print('Running call.') 
 
     #---NARVAL TWEAKS---#
-    power_spectra_path = f'wherever/this/lives/name_as_a_function_of_{ra}_{dec_string}_{N_days}.hdf5'
+    power_spectra_path = f'wherever/this/lives/name_as_a_function_of_{ra}_{dec_string}.hdf5'
     #---#
 
-    #the candidate should go to a subdirectory /Ndays/
-    os.system(f'run-stack-search-pipeline {str(ra)} {dec_string} search-monthly --cand-path ./{N_days}/ \
+    os.system(f'run-stack-search-pipeline {str(ra)} {dec_string} search-monthly --cand-path ./ \
             --file {power_spectra_path} --injection-path {temp_path} --only-injections')
     try:
         cands = np.load(cand_path, allow_pickle = True)
@@ -145,7 +119,8 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
         print('Could not load candidate file.')
 
     output = np.zeros((len(ii), 14))
-    output[:, 0:3] = np.array([ra, dec, N_days])[np.newaxis, :]
+    #date of 0 represents stack
+    output[:, 0:3] = np.array([ra, dec, 0])[np.newaxis, :]
 
     cand_freqs = []
     cand_idx = []
@@ -165,6 +140,7 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
     for i in range(len(ii)):
         inj = cands['injection_dicts'][i]
         #note that fwhm is totally borked in the output file
+        #arbitrarily setting it to 0.1
         #this is okay, we can recover it from the TPA_idx
         output[i, 3:10] = (prof_idx[ii[i]], inj['frequency'], inj['DM'], inj['flux'], 0.1, inj['predicted_sigma'], inj['predicted_nharm'])
         
@@ -192,7 +168,7 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
 
     return output
         
-def inject(N_days, N, pointing, seed):
+def inject(N, pointing, seed):
     ra = pointing[0]
     dec = pointing[1]
     #mode = 'database'
@@ -213,7 +189,7 @@ def inject(N_days, N, pointing, seed):
 
     try:
         #all run in block in same call        
-        call_and_retrieve(pointing, date, main_injection_idx, prof_idx, f, dm, S)
+        call_and_retrieve(pointing, main_injection_idx, prof_idx, f, dm, S)
     except Exception as e:
         print(f"An error occurred: {e}")
         traceback.print_exc() 
@@ -232,8 +208,6 @@ print('Loaded pointings.')
 #---THINGS THAT NEED TO BE TWEAKED FOR RUNNING ON NARVAL---#
 #there's some stuff in call_and_retrieve() that may also need to be tweaked
 #I indicated those spots with #---# 
-N_days = np.array([3, 6, 9, 12, 15, 18, 21])
-
 cand_directory_path = 'wherever/injections/cands/end/up/on/narval'
 move_cands_to = 'path/for/storing/cands'
 transmissivity_repo_path = '/path/to/Transmissivity'
@@ -241,15 +215,7 @@ transmissivity_repo_path = '/path/to/Transmissivity'
 
 task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])
 #i have no clue whether this will run in order of pointings...
-num_jobs = len(pointings)
-n_Ndays = len(N_days)
-
-print(f'The number of jobs is {num_jobs * n_Ndays}.')
-pointing_idx = task_id % n_pointings
-nday_idx     = task_id // n_pointings
-
-pointing = pointings[pointing_idx]
-N_day    = N_days[nday_idx]
-seed = np.random.SeedSequence(42).spawn(n_pointings * n_ndays)[task_id]
-result = inject(np.array([N_day]), 10, pointing, seed)
+pointing = pointings[task_id]
+seed = np.random.SeedSequence(42).spawn(len(pointings))[task_id]
+result = inject(10, pointing, seed)
 np.save(f"{transmissivity_repo_path}/results/stack/result_{task_id}.npy", result)
