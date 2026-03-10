@@ -131,10 +131,13 @@ def call_and_retrieve(pointing, N_days, ii, prof_idx, f, dm, S):
         dec_string = str(dec)
     print('Running call.') 
 
-    #---MAY NEED TO ADD DB CONFIG TO THIS CALL---#
+    #---NARVAL TWEAKS---#
+    power_spectra_path = f'wherever/this/lives/name_as_a_function_of_{ra}_{dec_string}_{N_days}.hdf5'
+    #---#
+
     #the candidate should go to a subdirectory /Ndays/
     os.system(f'run-stack-search-pipeline {str(ra)} {dec_string} search-monthly --cand-path ./{N_days}/ \
-            --injection-path {temp_path} --only-injections')
+            --file {power_spectra_path} --injection-path {temp_path} --only-injections')
     try:
         cands = np.load(cand_path, allow_pickle = True)
         print('Loaded candidate file.')
