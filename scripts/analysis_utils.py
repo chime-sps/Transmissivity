@@ -1,11 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
-plt.rcParams.update({'font.size': 14})
 
-# def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
-#                   predicted = False)
-    
 def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False):
 
     if stype in ['1d', '1', '1D', 1]:
@@ -165,38 +161,32 @@ def add_colorbar(fig, ax, cf, tick_locs):
     cbar.set_ticks(tick_locs)
     return cbar
 
-def add_crosshair(ax, x_bins, y_bins, x_dev, y_dev, x_log=False, y_log=False):
+def add_ellipse(ax, x_bins, y_bins, x_dev, y_dev, x_log=False, y_log=False, color = 'white'):
+    n_x = len(x_bins) - 1
+    n_y = len(y_bins) - 1
 
-    x_vals = x_bins[:-1]
-    y_vals = y_bins[:-1]
+    rx_ax = x_dev / n_x
+    ry_ax = y_dev / n_y
 
-    if x_log:
-        log_x = np.log(x_vals)
-        x_center = np.exp(log_x[-1] - 0.12 * (log_x[-1] - log_x[0]))
-        x_half_log = x_dev * (log_x[-1] - log_x[0]) / len(x_vals)
-        x_lo = np.exp(np.log(x_center) - x_half_log)
-        x_hi = np.exp(np.log(x_center) + x_half_log)
-    else:
-        x_center = x_vals[-1] - 0.12 * (x_vals[-1] - x_vals[0])
-        x_half = x_dev * (x_vals[-1] - x_vals[0]) / len(x_vals)
-        x_lo = x_center - x_half
-        x_hi = x_center + x_half
+    cx_ax = 1.0 - 0.05 - rx_ax
+    cy_ax = 1.0 - 0.05 - ry_ax
 
-    if y_log:
-        log_y = np.log(y_vals)
-        y_center = np.exp(log_y[-1] - 0.12 * (log_y[-1] - log_y[0]))
-        y_half_log = y_dev * (log_y[-1] - log_y[0]) / len(y_vals)
-        y_lo = np.exp(np.log(y_center) - y_half_log)
-        y_hi = np.exp(np.log(y_center) + y_half_log)
-    else:
-        y_center = y_vals[-1] - 0.12 * (y_vals[-1] - y_vals[0])
-        y_half = y_dev * (y_vals[-1] - y_vals[0]) / len(y_vals)
-        y_lo = y_center - y_half
-        y_hi = y_center + y_half
+    t = np.linspace(0, 2 * np.pi, 300)
+    x_ellipse_ax = cx_ax + rx_ax * np.cos(t)
+    y_ellipse_ax = cy_ax + ry_ax * np.sin(t)
 
-    kw = dict(color='white', linewidth=1.5, transform=ax.transData)
-    ax.plot([x_lo, x_hi], [y_center, y_center], **kw)
-    ax.plot([x_center, x_center], [y_lo, y_hi], **kw)
-    ax.plot(x_center, y_center, 'w+', markersize=4)
+    ax.plot(x_ellipse_ax, y_ellipse_ax,
+            color=color, linewidth=1.5,
+            transform=ax.transAxes)
+    
+def add_crosshair(ax, x_bins, x_dev):
+    n_x = len(x_bins) - 1
+    rx_ax = x_dev / n_x
+    cx_ax = 0.05 + rx_ax
+    cy_ax = 1.0 - 0.05 - 0.02  # room for T-caps
 
+    style = dict(color='black', linewidth=1.5, transform=ax.transAxes)
 
+    ax.plot([cx_ax - rx_ax, cx_ax + rx_ax], [cy_ax, cy_ax], **style)
+    ax.plot([cx_ax - rx_ax, cx_ax - rx_ax], [cy_ax - 0.02, cy_ax + 0.02], **style)
+    ax.plot([cx_ax + rx_ax, cx_ax + rx_ax], [cy_ax - 0.02, cy_ax + 0.02], **style)

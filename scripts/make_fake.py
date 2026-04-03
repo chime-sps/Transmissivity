@@ -76,7 +76,7 @@ def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, fl
             n_injections = len(load_profs)
     
     if injection_path in ['TPA', 'tpa']:
-        profiles = np.load('/home/squillace/Transmissivity/profiles/smoothed_baselined_TPA_pulses.npy')
+        profiles = np.load('../profiles/smoothed_baselined_TPA_pulses.npy')
         tpa_idx = np.array(tpa_idx)
         frequencies = np.array(f)
         dms = np.array(dm)
@@ -116,7 +116,7 @@ def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, fl
         sigmas = None
 
     else:
-        profiles = np.load('/home/squillace/Transmissivity/profiles/smoothed_baselined_TPA_pulses.npy')
+        profiles = np.load('../Transmissivity/profiles/smoothed_baselined_TPA_pulses.npy')
         sigmas = np.random.uniform(10, 17, n_injections)
         frequencies = np.random.uniform(10, 100, n_injections)
         dms = np.random.uniform(3, 200, n_injections)
@@ -153,7 +153,7 @@ def make_yaml(n_injections, file_name, injection_path, focus, tpa_idx, f, dm, fl
                 n_dict['profile'] = load_profs[i].tolist()
         
         data.append(n_dict)
-    file_name = os.getcwd()+'/'+file_name
+    file_name = file_name
     stream = open(file_name, 'w')
     yaml.dump(data, stream)
 
