@@ -52,6 +52,7 @@ def process_file(cand_file_path, outfile):
     else:
         print('Multiple injections in this power spectrum --> evaluating potential candidate-injection matches.') 
         for i in range(N_injections):
+            cand = None
             inj = cand_file['injection_dicts'][i]
             output[i, 3:10] = (-1, inj['frequency'], inj['DM'], inj['flux'], inj['FWHM'], inj['detection_sigma'], inj['detection_nharm'])
             print(f'Searching for candidates arising from injection {i}.') 
@@ -67,9 +68,10 @@ def process_file(cand_file_path, outfile):
                     cand = None
 
                 else:
-                    closest_match = np.argmin(np.abs(cand_freqs[same_injection] - inj['frequency']))
-                    print(f'Matched candidate with frequency {cand_freqs[closest_match]} to injection with frequency {inj["frequency"]}.')
-                    cand = cand_file[f'candidate_{closest_match}'].item()
+                    closest_match_local = np.argmin(np.abs(cand_freqs[same_injection] - inj['frequency']))
+                    global_idx = same_injection[closest_match_local]
+                    cand = cand_file[f'candidate_{global_idx}'].item()
+                    print(f'Matched candidate with frequency {cand["freq"]} to injection with frequency {inj["frequency"]}.')
 
             if cand is not None: 
                 output[i, 10:14] = (cand['sigma'], cand['features'].item()[3], cand['freq'], cand['dm'])
