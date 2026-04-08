@@ -147,9 +147,15 @@ def get_density2d(full_data, col1, col2, bins1, bins2, def_retrieval = 'all',
                                               bins=bin_edges)
         return injected_density, missed_density
 
-def make_levels(arr, logspace = False, Nlevels = 20):
+def make_levels(arr, logspace = False, Nlevels = 20, diverging = False):
 
-    if logspace:
+    if diverging: 
+        #cannot accomodate logspace
+        abs_max = np.max(np.abs(arr))
+        levels = np.linspace(-abs_max, abs_max, Nlevels)
+        return levels 
+    
+    elif logspace:
         return np.logspace(np.log10(arr[arr > 0].min()), np.log10(arr.max()), Nlevels)
     
     else:
