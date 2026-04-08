@@ -3,7 +3,8 @@ import click
 
 def process_file(cand_file_path, outfile):
 
-    split_path = cand_file_path.split('_')
+    file_only = cand_file_path.split('/')[-1]
+    split_path = file_only.split('_')
     ra = float(split_path[0])
     dec = float(split_path[1])
     days = float(split_path[6])
