@@ -1,19 +1,25 @@
 import numpy as np
 import click
 
-def process_file(cand_file_path, outfile):
+def process_file(cand_file_path, obstype, outfile):
 
     file_only = cand_file_path.split('/')[-1]
     split_path = file_only.split('_')
     ra = float(split_path[0])
     dec = float(split_path[1])
-    days = float(split_path[6])
+
+    if obstype == 'stack':
+        #in stack, this value is number of days in stack
+        day = float(split_path[6])
+    else:
+        #in single, this value is the date
+        day = split_path[2]
 
     cand_file = np.load(cand_file_path, allow_pickle = True)
     N_injections = len(cand_file['injection_dicts'])
 
     output = np.zeros((N_injections, 14))
-    output[:, 0:3] = np.array([ra, dec, days])[np.newaxis, :]
+    output[:, 0:3] = np.array([ra, dec, day])[np.newaxis, :]
     print(f'There were {N_injections} injections in this power spectrum.')
 
     cand_freqs = []
@@ -95,16 +101,20 @@ def process_file(cand_file_path, outfile):
         nargs = -1,
         )
 @click.option(
+        "--obstype", "-t",
+        default = 'stack',
+        )
+@click.option(
         "--output", "-o",
         default = 'stack_injections.txt',
         )
-def main(filenames, output):
+def main(filenames, obstype, output):
 
     for filename in filenames:
     
         print(f'Processing {filename}.') 
 
-        process_file(filename, output) 
+        process_file(filename, obstype, output) 
 
 if __name__ == "__main__":
 
