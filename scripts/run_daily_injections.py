@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import logging as log
 import yaml
@@ -121,7 +122,8 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
     sub_pointing = int(pointing[2])
     period_string = "_".join([f"{f[i]:.2f}" for i in ii])
     #ii_string = "_".join([f"{i}" for i in ii])
-    temp_path = f'inj_{period_string}.yaml'
+    instant_time = time.time()
+    temp_path = f'inj_{instant_time}_{period_string}_{ra}_{dec}.yaml'
     make_fake.make_yaml(len(ii), temp_path, 'tpa', None, prof_idx[ii], f[ii], dm[ii], S[ii])
     print('Made fakes.')
     cand_path = f'./injections/{year}/{month}/{day}/{ra:.2f}_{dec:.2f}_{sub_pointing}_{temp_path}_()_{period_string}_injection_candidates.npz'
@@ -133,7 +135,7 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
         dec_string = str(dec)
     print('Running call.') 
     os.system(f'run-pipeline --date {date} --db-host sps-archiver1 --db-port 27017 \
-            --db-name squillace --datpath /mnt/beegfs-client/raw/ \
+            --db-name rsquillace --datpath /mnt/beegfs-client/raw/ \
             --injection-path {temp_path} --only-injections {str(ra)} {dec_string}') 
     try:
         cands = np.load(cand_path, allow_pickle = True)
@@ -180,7 +182,7 @@ def call_and_retrieve(pointing, date, ii, prof_idx, f, dm, S):
             output[i, 10:14] = -1 * np.ones(4)
             print(f'Did not find a match for injection with f = {f[ii[i]]:.3f}, DM = {dm[ii[i]]:.2f}, and S = {S[ii[i]]:.2f}.')
         
-    outfile = '/home/squillace/Transmissivity/results/better_retrieval_output.txt'
+    outfile = '/home/squillace/Transmissivity/results/04_05_fixed_rednoise_first_analysis.txt'
 
     #RA, Dec, Date, TPA_idx, f, DM, flux, fwhm, predicted_sigma, predicted_nharm, output_sigma, output_nharm, output_f, output_dm
     with open(outfile, 'a') as f:
@@ -202,9 +204,7 @@ def inject(date, N, pointing, seed):
     ra = np.round(ra, 2)
     dec = np.round(dec, 2)
     print(f'Injecting {N} pulsars into ({ra}, {dec}) on {date}.')
-    kernels = np.load('/home/squillace/champss_software/champss/ps-processes/ps_processes/processes/kernels.npy')
-    kernel_scaling = np.load('/home/squillace/champss_software/champss/ps-processes/ps_processes/processes/kernels.meta.npy')
-    
+    #kernels = np.load(os.path.dirname(__file__) + "/kernels.npz")    
     maxdm = get_max_dm(ra, dec)
     #ensure randomization between workers
     rng = np.random.default_rng(seed)
@@ -230,16 +230,14 @@ def inject(date, N, pointing, seed):
             print(f"An error occurred: {e}")
             traceback.print_exc() 
 
-date = 20251119
-pointings = np.load(f'{date}_pointings.npy')
+date = 20260405
+pointings = np.load(f'{date}_pointings.npy')[:5]
 print('Loaded pointings.')
 num_workers = 5
-num_jobs = len(pointings[10:])
+num_jobs = len(pointings)
 seeds = np.random.SeedSequence(42).spawn(num_jobs)
 
 
 with Pool(num_workers) as pool:
-    output = pool.starmap(partial(inject, date, 10), zip(pointings[10:], seeds))
-#pool = Pool(5)
-#output = pool.map(partial(inject, date, 10), pointings[:10])
+    output = pool.starmap(partial(inject, date, 10), zip(pointings, seeds))
 
