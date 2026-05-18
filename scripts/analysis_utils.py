@@ -253,7 +253,9 @@ def make_contour_map(densities,
     if cmap_log:
         cbar.set_ticks([1e1, 1e2, 1e3, 1e4, 1e5])
 
-    if not cmap_diverging and not cmap_log:
+    if cmap_diverging:
+        cbar.set_ticks(np.arange(-0.5, 0.6, 0.1))
+    else:
         cbar.set_ticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
     fig.suptitle(title, 
