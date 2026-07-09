@@ -139,17 +139,18 @@ def inject(N, pointing_idx, seed):
         print(f'main idx = {main_injection_idx}')
         print(f'sep idx = {separate_injection_idx}')
 
-        try:
-            #all run in block in same call        
-            call_no_retrieve(pspec_file, main_injection_idx, prof_idx, f, dm, S)
-        except Exception as e:
-            print(f"An error occurred: {e}")
-            traceback.print_exc() 
+        if len(main_injection_idx) > 0:
+            try:
+                #all run in block in same call        
+                call_no_retrieve(pspec_file, main_injection_idx, prof_idx, f, dm, S)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                traceback.print_exc() 
 
         for ii in separate_injection_idx:
             try:    
                 #run individually to avoid clustering issues
-                call_no_retrieve(pointing, np.array([ii]), prof_idx, f, dm, S)
+                call_no_retrieve(pspec_file, np.array([ii]), prof_idx, f, dm, S)
             except Exception as e:
                 print(f"An error occurred: {e}")
                 traceback.print_exc() 
