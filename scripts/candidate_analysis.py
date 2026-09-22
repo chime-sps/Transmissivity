@@ -1,5 +1,7 @@
 import numpy as np
 import click
+import glob
+import os
 
 def process_file(cand_file_path, obstype, outfile):
 
@@ -10,7 +12,7 @@ def process_file(cand_file_path, obstype, outfile):
 
     if obstype == 'stack':
         #in stack, this value is number of days in stack
-        day = float(split_path[6])
+        day = float(split_path[6]) #check this-- convention keeps changing
     else:
         #in single, this value is the date
         day = split_path[2]
@@ -38,7 +40,7 @@ def process_file(cand_file_path, obstype, outfile):
     #using complicated if-tree to clarify logic and optimize slightly
     if N_injections == 1:
         inj = cand_file['injection_dicts'][0]
-        output[0, 3:10] = (-1, inj['frequency'], inj['DM'], inj['flux'], inj['FWHM'], inj['detection_sigma'], inj['detection_nharm'])
+        output[0, 3:10] = (-1, inj['frequency'], inj['DM'], inj['flux'], inj['FWHM'], inj['detection_sigma'], inj['predicted_sigma'])
         if len(cand_freqs) == 1:
             cand = cand_file['candidate_0'].item()
             print('One injection + one candidate --> matched!')
@@ -93,8 +95,6 @@ def process_file(cand_file_path, obstype, outfile):
 
     return
 
-
-
 @click.command()
 @click.argument(
         "filenames",
@@ -108,10 +108,16 @@ def process_file(cand_file_path, obstype, outfile):
         "--output", "-o",
         default = 'stack_injections.txt',
         )
-def main(filenames, obstype, output):
+@click.option(
+        "--directory", "-d",
+        default = None,
+        )
+def main(filenames, obstype, output, directory):
+
+    if directory is not None:
+        filenames = glob.glob(os.path.join(directory, '*npz'))
 
     for filename in filenames:
-    
         print(f'Processing {filename}.') 
 
         process_file(filename, obstype, output) 
