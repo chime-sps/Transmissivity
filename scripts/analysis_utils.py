@@ -4,7 +4,8 @@ from scipy.ndimage import gaussian_filter
 from matplotlib.ticker import LogFormatter
 from matplotlib import colors
 
-def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False):
+def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False,
+                    apply_thin_mask = True, mask_cutoff = 20):
 
     if stype in ['1d', '1', '1D', 1]:
         col, bins, gauss_dev = P
@@ -13,6 +14,7 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
                                                     bins, 
                                                     def_retrieval = def_retrieval,
                                                     predicted = predicted)
+
     elif stype in ['2d', '2', '2D', 2]:
         col1, col2, bins1, bins2, dev1, dev2 = P
         gauss_dev = (dev1, dev2)
@@ -26,7 +28,7 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
     else:
         print(f'stype was not a valid input.')
         return
-
+    
     arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
     arr_ret_smooth = gaussian_filter(arr_retrieved, gauss_dev)
 
@@ -49,6 +51,11 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
         beam_area = 2 * np.pi * gauss_dev[0] * gauss_dev[1]
 
     arr_inj_per_beam = arr_inj_smooth * beam_area
+
+    if apply_thin_mask:
+
+        arr_ret_p = mask_thin(arr_ret_p, arr_inj_per_beam, mask_cutoff, stype)
+        arr_ret_p_smooth = mask_thin(arr_ret_p_smooth, arr_inj_per_beam, mask_cutoff, stype)
 
     return arr_inj_per_beam, arr_ret_p, arr_ret_p_smooth
 
@@ -159,13 +166,12 @@ def make_levels(arr, logspace = False, Nlevels = 20, diverging = False):
 
     if diverging: 
         #cannot accomodate logspace
-        abs_max = np.max(np.abs(arr))
+        abs_max = np.nanmax(np.abs(arr))
         levels = np.linspace(-abs_max, abs_max, Nlevels)
         return levels 
     
     elif logspace:
-        #return np.logspace(np.log10(arr[arr > 0].min()), np.log10(arr.max()), Nlevels)
-        return np.logspace(1, 5, Nlevels)
+        return np.logspace(1., np.log10(arr.max()), Nlevels)
     else:
         return np.linspace(0, 1, Nlevels)
 
@@ -213,7 +219,8 @@ def make_contour_map(densities,
                      ellipse_colors = ['w', 'w', 'w', 'w', 'w', 'w'],
                      colorbar_name = 'Probability of Retrieval',
                      cmap_diverging = False,
-                     cmap_log = False
+                     cmap_log = False,
+                     log_ticks = None,
                      ):
 
     x_labels = ['Frequency (Hz)', 'Frequency (Hz)', 'Frequency (Hz)',
@@ -224,8 +231,8 @@ def make_contour_map(densities,
     xlogs = [True, True, True, True, True, True]
     ylogs = [False, True, True, True, False, False]
 
-    subtitles = ['Frequency vs DM', 'Frequency vs Flux', 'Frequency vs FWHM',
-                 'FWHM vs Flux', 'FWHM vs DM', 'Flux vs DM']
+    # subtitles = ['Frequency vs DM', 'Frequency vs Flux', 'Frequency vs FWHM',
+    #              'FWHM vs Flux', 'FWHM vs DM', 'Flux vs DM']
 
     fig, ax = plt.subplots(2, 3, figsize=(26, 14), layout = 'constrained')
     ax = ax.flatten()
@@ -236,7 +243,7 @@ def make_contour_map(densities,
                                   densities[i],
                                   bins1[i], bins2[i],
                                   dev1[i], dev2[i],
-                                  title = subtitles[i],
+    #                              title = subtitles[i],
                                   xlabel = x_labels[i],
                                   ylabel = y_labels[i],
                                   xlog = xlogs[i],
@@ -244,22 +251,22 @@ def make_contour_map(densities,
                                   cmap = cmap,
                                   ellipse_color = ellipse_colors[i],
                                   cmap_diverging = cmap_diverging,
-                                  cmap_log = cmap_log
+                                  cmap_log = cmap_log,
                                   )
 
     cbar = fig.colorbar(cf, ax=ax, location='right', pad=0.08)
     cbar.set_label(colorbar_name, labelpad=10)
 
     if cmap_log:
-        cbar.set_ticks([1e1, 1e2, 1e3, 1e4, 1e5])
+        cbar.set_ticks(log_ticks)
 
-    if cmap_diverging:
-        cbar.set_ticks(np.arange(-0.5, 0.6, 0.1))
+    elif cmap_diverging:
+        cbar.set_ticks(np.arange(-0.3, 0.4, 0.1))
     else:
         cbar.set_ticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
     fig.suptitle(title, 
-                fontsize=30, fontweight='bold')
+                fontsize=40, fontweight='bold')
 
     plt.show()
 
@@ -276,7 +283,8 @@ def populate_contour_map(ax,
                          cmap_log = False):
     levels = make_levels(density, 
                          logspace = cmap_log,
-                         diverging = cmap_diverging) 
+                         diverging = cmap_diverging,
+                         Nlevels = 15) 
     
     if cmap_log:
         norm = colors.LogNorm(vmin=10, vmax=density.max())
@@ -305,3 +313,15 @@ def populate_contour_map(ax,
     add_ellipse(ax, bins1, bins2, dev1, dev2, x_log=xlog, color = ellipse_color)
 
     return cf
+
+
+def mask_thin(density, injections, min_inj = 1e2, stype = '1d', ):
+
+    if stype in [1, '1', '1D', '1d']:
+        return np.where(injections >= min_inj, density, np.nan)
+
+    elif stype in [2, '2', '2D', '2d']:
+        return [np.where(inj >= min_inj, m, np.nan) for m, inj in zip(density, injections)]
+
+    else:
+        print(f'[WARNING] {stype} not a valid dimension.')
