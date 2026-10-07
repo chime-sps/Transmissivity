@@ -3,6 +3,23 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 from matplotlib.ticker import LogFormatter
 from matplotlib import colors
+from scipy.ndimage import distance_transform_edt
+
+def fill_nans(arr):
+    # Fill NaNs from valid neighbours.
+    #   1D: linear interpolation; NaNs at the ends take the nearest valid value.
+    #   2D: each NaN takes the value of the nearest valid cell in the map, so
+    #       nothing is carried from the end of one row to the start of the next.
+    nan_mask = np.isnan(arr)
+    if nan_mask.all() or not nan_mask.any():
+        return arr
+    if arr.ndim == 1:
+        x = np.arange(len(arr))
+        out = arr.copy()
+        out[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], arr[~nan_mask])
+        return out
+    nearest = distance_transform_edt(nan_mask, return_distances = False, return_indices = True)
+    return arr[tuple(nearest)]
 
 def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False,
                     apply_thin_mask = True, mask_cutoff = 20):
@@ -14,6 +31,7 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
                                                     bins, 
                                                     def_retrieval = def_retrieval,
                                                     predicted = predicted)
+        beam_area = np.sqrt(2 * np.pi) * gauss_dev
 
     elif stype in ['2d', '2', '2D', 2]:
         col1, col2, bins1, bins2, dev1, dev2 = P
@@ -24,81 +42,32 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
                                                     bins1,
                                                     bins2,
                                                     def_retrieval = def_retrieval)
+        beam_area = 2 * np.pi * dev1 * dev2
         
     else:
         print(f'stype was not a valid input.')
         return
     
+    # injection distributions
     arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
     arr_ret_smooth = gaussian_filter(arr_retrieved, gauss_dev)
-
-    arr_ret_p_smooth = arr_ret_smooth / arr_inj_smooth
-
-    arr_ret_p = arr_retrieved / arr_injected
-    
-    shape = arr_ret_p.shape
-    flat = arr_ret_p.flatten()
-    nan_mask = np.isnan(flat)
-    x = np.arange(len(flat))
-    flat[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], flat[~nan_mask])
-    arr_ret_p = flat.reshape(shape)
-
-    arr_ret_p_smooth[np.isnan(arr_ret_p_smooth)] = 0.
-
-    if stype in ['1d', '1', '1D', 1]:
-        beam_area = np.sqrt(2 * np.pi) * gauss_dev
-    else:
-        beam_area = 2 * np.pi * gauss_dev[0] * gauss_dev[1]
-
     arr_inj_per_beam = arr_inj_smooth * beam_area
 
-    if apply_thin_mask:
+    # densities
+    arr_ret_p = arr_retrieved / arr_injected
+    arr_ret_p_smooth = arr_ret_smooth / arr_inj_smooth
 
-        arr_ret_p = mask_thin(arr_ret_p, arr_inj_per_beam, mask_cutoff, stype)
-        arr_ret_p_smooth = mask_thin(arr_ret_p_smooth, arr_inj_per_beam, mask_cutoff, stype)
+    # mask thin
+    if apply_thin_mask:
+        thin = arr_inj_per_beam < mask_cutoff
+        arr_ret_p = np.where(thin, np.nan, arr_ret_p)
+        arr_ret_p_smooth = np.where(thin, np.nan, arr_ret_p_smooth)
+
+    # interpolate
+    arr_ret_p = fill_nans(arr_ret_p)
+    arr_ret_p_smooth = fill_nans(arr_ret_p_smooth)
 
     return arr_inj_per_beam, arr_ret_p, arr_ret_p_smooth
-
-def get_blindspots(full_data, *P, stype = '1d'):
-
-    if stype in ['1d', '1', '1D', 1]:
-        col, bins, gauss_dev = P
-        arr_injected, arr_missed = get_density1d(full_data,
-                                                    col, 
-                                                    bins, 
-                                                    stype = 'missed')
-    elif stype in ['2d', '2', '2D', 2]:
-        col1, col2, bins1, bins2, dev1, dev2 = P
-        gauss_dev = (dev1, dev2)
-        arr_injected, arr_missed = get_density2d(full_data,
-                                                    col1,
-                                                    col2,
-                                                    bins1,
-                                                    bins2,
-                                                    stype = 'missed')
-        
-    else:
-        print(f'stype was not a valid input.')
-        return
-
-    arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
-    arr_mis_smooth = gaussian_filter(arr_missed, gauss_dev)
-
-    arr_inj_p_smooth = arr_inj_smooth / np.sum(arr_inj_smooth)
-    arr_mis_p_smooth = arr_mis_smooth / arr_inj_smooth
-
-    arr_mis_p = arr_missed / arr_injected
-    
-    shape = arr_mis_p.shape
-    flat = arr_mis_p.flatten()
-    nan_mask = np.isnan(flat)
-    x = np.arange(len(flat))
-    flat[nan_mask] = np.interp(x[nan_mask], x[~nan_mask], flat[~nan_mask])
-    arr_mis_p = flat.reshape(shape)
-
-    arr_mis_p_smooth[np.isnan(arr_mis_p_smooth)] = 0.
-
-    return arr_inj_p_smooth, arr_mis_p, arr_mis_p_smooth
 
 def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
                   predicted = False):
