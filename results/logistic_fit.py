@@ -24,6 +24,15 @@ def _family_cdf(x, family):
     else:
         raise ValueError(f"family must be 'gaussian' or 'logistic', got {family!r}")
 
+def _family_ppf(p, family):
+    """Inverse of _family_cdf: the value x at which the family's CDF equals p."""
+    p = np.asarray(p, dtype=float)
+    if family == 'gaussian':
+        return norm.ppf(p)
+    elif family == 'logistic':
+        return np.log(p / (1.0 - p))
+    else:
+        raise ValueError(f"family must be 'gaussian' or 'logistic', got {family!r}")
 
 def _sigma_from_slope(slope, family):
     """
@@ -47,7 +56,7 @@ def _sigma_from_slope(slope, family):
         raise ValueError(f"family must be 'gaussian' or 'logistic', got {family!r}")
 
 
-def get_cross_point(X, y, logspace=True, family='logistic'):
+def get_cross_point(X, y, logspace=True, family='logistic', spread_levels=(0.025, 0.975)):
     """
     family : 'logistic' (default) or 'gaussian' -- which link function to
     fit. Both are location-scale link functions with an S-shaped CDF, so
@@ -92,10 +101,15 @@ def get_cross_point(X, y, logspace=True, family='logistic'):
     else:
         cdf_fit = lambda x: model.cdf(b0 + b1 * x)
 
-    print(f'S = {intercept:.2f} +/- {se_intercept:.4f}')
-    # `result` is returned too so callers (e.g. run_test) can build a
-    # confidence band on the fitted curve via result.get_prediction(...).
-    return intercept, se_intercept, cdf_fit, result
+    x_levels = (_family_ppf(spread_levels, family) - b0) / b1
+    if logspace:
+        x_levels = np.exp(x_levels)
+    spread = tuple(np.sort(x_levels))  
+
+    print(f'S = {intercept:.2f} +/- {se_intercept:.4f}, '
+          f'turn-on from {spread[0]:.3g} to {spread[1]:.3g} '
+          f'({100 * min(spread_levels):g}% to {100 * max(spread_levels):g}%)')
+    return intercept, se_intercept, cdf_fit, result, spread
 
 
 def get_simulated_data(n=3000,
