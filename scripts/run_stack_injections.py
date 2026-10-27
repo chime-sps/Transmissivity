@@ -39,10 +39,31 @@ from beamformer.strategist.strategist import PointingStrategist
 from sps_dedispersion.dedisperse import dedisperse
 from dmt.libdmt import FDMT
 
-def get_max_dm(ra, dec):
+_maxdm_coords_cache = {}
 
-    maxdm = maxdm_dict[f'{ra} {dec}']
-    print(f'Found maximum DM: {maxdm}.')
+def get_max_dm(ra, dec):
+    
+    cache_key = id(maxdm_dict)
+    if cache_key not in _maxdm_coords_cache:
+        keys = list(maxdm_dict.keys())
+        coords = np.array([tuple(map(float, k.split())) for k in keys])
+        _maxdm_coords_cache[cache_key] = (keys, coords)
+    keys, coords = _maxdm_coords_cache[cache_key]
+
+    ras, decs = coords[:, 0], coords[:, 1]
+
+    dra = (ra - ras + 180) % 360 - 180
+    mean_dec_rad = np.radians((dec + decs) / 2)
+    dx = dra * np.cos(mean_dec_rad)
+    dy = dec - decs
+    dist2 = dx**2 + dy**2
+
+    idx = np.argmin(dist2)
+    closest_key = keys[idx]
+    maxdm = maxdm_dict[closest_key]
+
+    print(f'Found maximum DM: {maxdm} (nearest match: {closest_key}, '
+          f'{np.sqrt(dist2[idx]):.4f} deg away).')
     return maxdm
 
 def dm_distribution(x, mu, sig, l):
@@ -108,6 +129,7 @@ def call_no_retrieve(pspec_file, ii, prof_idx, f, dm, S):
     #---NARVAL TWEAKS---#
     power_spectra_path = f'/project/ctb-vkaspi/champss/stack_variable_depth/saved_stacks/{pspec_file}'
     #power_spectra_path = f'/project/ctb-vkaspi/champss/stack_202511/{ra}_{dec}_power_spectra_stack.hdf5'
+    #power_spectra_path = f'/project/ctb-vkaspi/champss/stack/{pspec_file}'
     #---#
 
     os.system(f'run-stack-search-pipeline {str(ra)} {dec_string} search-monthly --cand-path {cand_directory_path} \
@@ -118,48 +140,50 @@ def call_no_retrieve(pspec_file, ii, prof_idx, f, dm, S):
     os.remove(temp_path)
 
     return
-        
-def inject(N, pointing_idx, seed):
-    rng = np.random.default_rng(seed)
-    for idx in range(pointing_idx, pointing_idx + 50):
-        pspec_file = pspec_files[idx]
-        ra = float(pspec_file.split('_')[0])
-        dec = float(pspec_file.split('_')[1])
-        #mode = 'database'
-        #ap = find_closest_pointing(ra, dec, mode=mode)   
-        #ra = np.round(ra, 2)
-        #dec = np.round(dec, 2)
-        print(f'Injecting {N} pulsars into ({ra}, {dec}).')
-        maxdm = get_max_dm(ra, dec)
-        #ensure randomization between workers
-        prof_idx, f, dm, S = get_injections(N, maxdm, rng = rng)
+       
+def inject(N, pointing_idx, seed, n_repeats=1):
+    repeat_seeds = seed.spawn(n_repeats)
+    for rep_seed in repeat_seeds:
+        rng = np.random.default_rng(rep_seed)
+        for idx in range(pointing_idx, pointing_idx + 50):
+            pspec_file = pspec_files[idx]
+            ra = float(pspec_file.split('_')[0])
+            dec = float(pspec_file.split('_')[1])
+            #mode = 'database'
+            #ap = find_closest_pointing(ra, dec, mode=mode)   
+            #ra = np.round(ra, 2)
+            #dec = np.round(dec, 2)
+            print(f'Injecting {N} pulsars into ({ra}, {dec}).')
+            maxdm = get_max_dm(ra, dec)
+            #ensure randomization between workers
+            prof_idx, f, dm, S = get_injections(N, maxdm, rng = rng)
 
-        main_injection_idx = np.where(S < 1.)[0]
-        separate_injection_idx = np.where(S >= 1.)[0]
-        print(f'main idx = {main_injection_idx}')
-        print(f'sep idx = {separate_injection_idx}')
+            main_injection_idx = np.where(S < 1.)[0]
+            separate_injection_idx = np.where(S >= 1.)[0]
+            print(f'main idx = {main_injection_idx}')
+            print(f'sep idx = {separate_injection_idx}')
 
-        if len(main_injection_idx) > 0:
-            try:
-                #all run in block in same call        
-                call_no_retrieve(pspec_file, main_injection_idx, prof_idx, f, dm, S)
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                traceback.print_exc() 
+            if len(main_injection_idx) > 0:
+                try:
+                    #all run in block in same call        
+                    call_no_retrieve(pspec_file, main_injection_idx, prof_idx, f, dm, S)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                    traceback.print_exc() 
 
-        for ii in separate_injection_idx:
-            try:    
-                #run individually to avoid clustering issues
-                call_no_retrieve(pspec_file, np.array([ii]), prof_idx, f, dm, S)
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                traceback.print_exc() 
+            for ii in separate_injection_idx:
+                try:    
+                    #run individually to avoid clustering issues
+                    call_no_retrieve(pspec_file, np.array([ii]), prof_idx, f, dm, S)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+                    traceback.print_exc() 
 
 
 #---THINGS THAT NEED TO BE TWEAKED FOR RUNNING ON NARVAL---#
 #there's some stuff in call_and_retrieve() that may also need to be tweaked
 #I indicated those spots with #---#
-cand_directory_path = '/project/ctb-vkaspi/champss/injections'
+cand_directory_path = '/project/ctb-vkaspi/champss/injections/injections/homogeneous'
 transmissivity_repo_path = '/project/ctb-vkaspi/champss/injections/Transmissivity'
 #---#
 with open('stack_maxdm.json', 'r') as f:
@@ -168,11 +192,16 @@ with open('stack_maxdm.json', 'r') as f:
 #pointings = pointings
 #print('Loaded pointings.')
 with open(f'{transmissivity_repo_path}/scripts/stack_var_files.txt', 'r') as f:
-    pspec_files = f.readlines()
+#with open(f'{transmissivity_repo_path}/scripts/stack_pointings_20261001.txt', 'r') as f:
+    pspec_files = f.read().splitlines()
 batch_indices = np.arange(len(pspec_files))[::50]  #start idx of each batch
-seeds = np.random.SeedSequence(42).spawn(len(batch_indices))
 
 task_id = int(os.environ["SLURM_ARRAY_TASK_ID"])  #range over len(batch_indices)
+root_seed = int(os.environ.get("INJECTION_RUN_SEED", time.time_ns()))
+seeds = np.random.SeedSequence(root_seed).spawn(len(batch_indices))
+
 seed = seeds[task_id]
-inject(10, batch_indices[task_id], seed)
+log.info(f"Injection seed entropy (task {task_id}): {seed.entropy}")
+
+inject(10, batch_indices[task_id], seed, n_repeats = 50)
 #np.save(f"{transmissivity_repo_path}/results/stack/result_{task_id}.npy", result)
