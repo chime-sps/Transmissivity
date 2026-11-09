@@ -1,120 +1,235 @@
+import logging
+import os
+from datetime import datetime, timezone
+
+import click
 import numpy as np
-from ps_processes.processes.ps_stack import PowerSpectraStack
-from ps_processes.processes.ps_inject import Injection
-from sps_common.interfaces import PowerSpectra, DedispersedTimeSeries
-from ps_processes.processes.ps import PowerSpectraCreation
-import logging as log
-from sps_common.interfaces.utilities import (
-    harmonic_sum,
-    powersum_at_sigma,
-    sigma_sum_powers,
+
+import ps_processes.processes.ps_inject as ps_inject
+from ps_processes.processes.ps_inject import Injection, TPA_profiles, kernels
+from sps_common.constants import DM_CONSTANT, FREQ_BOTTOM, FREQ_TOP, TSAMP
+from sps_common.interfaces.utilities import harmonic_sum
+
+log = logging.getLogger(__name__)
+
+PADDED_LENGTH = 1048576  
+MAX_DM = 10**3.3  
+RA = 50.814417767387674  
+DEC = 39.90059501729749  
+UTC_START = 1696587658.0  
+
+# output columns of npz file
+RESULT_DTYPE = np.dtype(
+    [
+        ("TPA_idx", np.int32),
+        ("frequency", np.float64),
+        ("DM", np.float64),  
+        ("flux", np.float64),  
+        ("FWHM", np.float64),  
+        ("injected_nharm", np.int32),
+        ("predicted_sigma", np.float64),
+        ("predicted_nharm", np.int32),
+    ]
 )
-import yaml
-import matplotlib.pyplot as plt
-from sps_common.constants import FREQ_TOP, FREQ_BOTTOM, TSAMP, DM_CONSTANT
-from sps_databases import db_api, db_utils
-import beamformer.skybeam as bs
-from sps_dedispersion.dedisperse import dedisperse
-from dmt.libdmt import FDMT
-from matplotlib.colors import LogNorm
-from scipy.special import erf
 
-def dm_distribution(x, mu, sig, l):
-    gauss = l*np.exp(l*(2*mu + l*sig**2 - 2*x)/2)/2
-    tail = 1 - erf((mu + l*sig**2 - x) / np.sqrt(2) / sig) #complimentary error function
 
-    return gauss*tail / np.sum(gauss*tail)
+class NoiseFreePowerSpectra:
+    """
+    Basically just exists to be a minimal pspec that we can read attributes from.
+    """
 
-pspec = PowerSpectra.read('blank_pspec.hdf5')
-pspec_median = np.median(pspec.power_spectra)
-pspec_mean = np.mean(pspec.power_spectra)
-f_nyquist = pspec.freq_labels[-1]
-df = (f_nyquist - pspec.freq_labels[0]) / len(pspec.freq_labels)
-print(f'Synthetic power spectrum loaded with median = {pspec_median} and mean = {pspec_mean}.') 
-kernels = np.load('/home/squillace/champss_software/champss/ps-processes/ps_processes/processes/kernels.npy')
-kernel_scaling = np.load('/home/squillace/champss_software/champss/ps-processes/ps_processes/processes/kernels.meta.npy')
+    def __init__(
+        self, tsamp, max_dm, ra, dec, date, ndays=1, padded_length=PADDED_LENGTH
+    ):
+        self.freq_labels = np.fft.rfftfreq(padded_length, d=tsamp)[:-1]
 
-profiles = np.load('smoothed_baselined_TPA_pulses.npy')
-N_batch = 300
-N = len(profiles)
-output = np.zeros((N*N_batch, 7))
+        disp_delay = 1 / FREQ_BOTTOM**2 - 1 / FREQ_TOP**2
+        num_dms = int(DM_CONSTANT * max_dm * disp_delay / tsamp) + 1
+        self.dms = np.arange(0, num_dms) / DM_CONSTANT / disp_delay * tsamp
 
-with open('synthetic_map_with_tsky.txt', 'a') as file:
-    for batch in range(N_batch):
-        
-        f_dist = np.loadtxt('atnf_freqs.txt', usecols = [1])
-        f_log = np.logspace(-3, 2.7, int((4/6)*len(f_dist)))
-        f_choices = np.concatenate([f_dist, f_log]) 
-        f = np.random.choice(f_choices, size = N)
-        f[f > f_nyquist] = f_nyquist
+        self.num_days = ndays
+        self.power_spectra = np.broadcast_to(
+            np.float32(self.num_days), (len(self.dms), len(self.freq_labels))
+        )
+        self.bad_freq_indices = [[]]
+        self.ra = ra
+        self.dec = dec
+        self.datetimes = [date]
 
-        dm_spread = np.linspace(0, 1000, 10000)
-        dm_weights = dm_distribution(dm_spread, 24, 24, 0.02)
-        #24 is chosen as the maximum DM value at b = 90 deg from NE2001
-        dm_dist = np.random.choice(dm_spread, size = int(0.6*N), p = dm_weights)
-        dm_linear = np.linspace(0, 1000, int(0.4*N))
-        dm = np.concatenate([dm_dist, dm_linear])
-        dm[dm > pspec.dms[-1]] = pspec.dms[-1]
 
-        S_choices = np.logspace(-2, 1, 10000)
-        S = np.random.choice(S_choices, N)
-        #TPA_idx, f, DM, flux, fwhm, predicted_sigma, predicted_nharm
+def make_full_harm_bins(freq_labels, num_harm=32):
+    """
+    From ps_search.py.
+    """
+    ps_length_search = (len(freq_labels) // num_harm) * num_harm
+    return np.vstack(
+        (
+            np.arange(0, ps_length_search),
+            harmonic_sum(num_harm, np.zeros(ps_length_search))[1],
+        )
+    ).astype(np.int32)
 
-        padded_length = 2 * pspec.power_spectra.shape[1]
-        num_harm = 32
-        full_harm_bins = np.vstack(
-                        (
-                            np.arange(0, padded_length // 2),
-                            harmonic_sum(num_harm, np.zeros(padded_length // 2))[1],
-                        )
-                    ).astype(np.int32)
-        for i in range(N):
 
-            print(f'f = {f[i]} Hz, DM = {dm[i]} pc / cm^3, S = {S[i]} mJy.')
-            injection = Injection(pspec, full_harm_bins, dm[i], f[i], profiles[i],
-                    flux = S[i])
+def frequency_choices(f_nyquist):
+    
+    f_dist = np.loadtxt(
+        os.path.join(os.path.dirname(ps_inject.__file__), "atnf_freqs.txt"),
+        usecols=[1],
+    )
+    f_log = np.logspace(-3, 2.7, int((4 / 6) * len(f_dist)))
+    f_choices = np.concatenate([f_dist, f_log])
+    return f_choices[f_choices < f_nyquist]
 
-            fwhm = injection.W * f[i]
-            print(f'ACF routine fit FWHM = {np.round(100 * fwhm)}%.')
-            if fwhm > 0.5:
-                print('ACF too wide! Skipping this injection.')
-                continue
 
-            scaled_prof_fft, phases = injection.flux_to_power()
-            smeared_prof_fft = injection.smear_fft(scaled_prof_fft)
-            windowed_prof_fft = injection.time_windowing(smeared_prof_fft)
+def disperse_true_dm_row(inj, prof_fft, kernels_dict):
+    
+    trial_dms = inj.trial_dms
+    i_min = np.argmin(np.abs((inj.true_dm - 2 * inj.deltaDM) - trial_dms))
+    i_max = np.argmin(np.abs((inj.true_dm + 2 * inj.deltaDM) - trial_dms))
+    dm_indices = np.arange(i_min, i_max + 1)
 
-            n_harm = int(np.floor(f_nyquist / f[i]))
-            if 32 < n_harm:
-                n_harm = 32
+    i0 = inj.true_dm_trial
+    key = np.argmin(
+        np.abs(np.abs((trial_dms[i0] - inj.true_dm) / inj.deltaDM) - kernels_dict["scaling"])
+    )
+    row = prof_fft * kernels_dict[str(key)][1 : len(prof_fft) + 1]
+    return dm_indices, row
 
-            if len(scaled_prof_fft) > n_harm:
-                windowed_prof_fft = windowed_prof_fft[:n_harm]
-            used_nharm = len(windowed_prof_fft)
 
-            dispersed_prof_fft, dm_indices = injection.disperse(
-                windowed_prof_fft, kernels, kernel_scaling
-            )
-            harms = []
-            for k in range(len(dispersed_prof_fft)):
-                bins, harm = injection.scalloping(dispersed_prof_fft[k], df)
-                harms.append(harm)
+def predict_injection(pspec, full_harm_bins, kernels_dict, tsamp, f, dm, flux, profile):
+    """
+    Same as ps_inject() EXCEPT:
+        - no red noise normalization
+        - no RFI weighting
+        - only disperse at true DM row
+    """
+    inj = Injection(pspec, full_harm_bins, dm, f, profile, flux=flux)
 
-            harms = np.asarray(harms)
-            normaliser = injection.get_rednoise_normalisation(
-                        bins,
-                        dm_indices,
-                    )
-            harms *= normaliser
-            
+    freqs = pspec.freq_labels
+    f_nyquist = freqs[-1]
+    df = 1 / (tsamp * 2 * len(freqs))
+
+    n_harm = min(32, int(np.floor(f_nyquist / f)))
+
+    scaled_prof_fft, _ = inj.flux_to_power()
+    if len(scaled_prof_fft) > n_harm:
+        scaled_prof_fft = scaled_prof_fft[:n_harm]
+    else:
+        n_harm = len(scaled_prof_fft)
+
+    windowed_prof_fft = inj.time_windowing(scaled_prof_fft)
+    smeared_prof_fft = inj.smear_fft(windowed_prof_fft)
+    dm_indices, true_dm_row = disperse_true_dm_row(inj, smeared_prof_fft, kernels_dict)
+
+    true_dm_in_harms = inj.true_dm_trial - dm_indices[0]
+    bins, true_row = inj.scalloping(true_dm_row, df)
+    harms = np.zeros((len(dm_indices), len(true_row)))
+    harms[true_dm_in_harms] = true_row
+
+    _, predicted_nharm, predicted_sigma, _ = inj.predict_sigma(
+        harms, bins, dm_indices, n_harm, True
+    )
+
+    return predicted_sigma, predicted_nharm, n_harm, inj.W * f
+
+
+@click.command()
+@click.option(
+    "--tsamp",
+    type=float,
+    default=None,
+    help="Sample time in microseconds. Default: 983 (CHAMPSS).",
+)
+@click.option(
+    "-n", "--n-injections", type=int, default=10000, show_default=True,
+    help="Number of injections to generate.",
+)
+@click.option(
+    "-o", "--output", type=click.Path(), default=None,
+    help="Output .npy file. Default: transmissivity_prediction_tsamp<tsamp>_ndays<ndays>.npy",
+)
+@click.option(
+    "--ndays", type=click.IntRange(min=1), default=1, show_default=True,
+    help="Number of days over which the injection is stacked.",
+)
+@click.option("--seed", type=int, default=None, help="Seed for the random generator.")
+@click.option(
+    "--max-dm", type=float, default=MAX_DM, show_default=True,
+    help="Maximum trial DM.",
+)
+@click.option("--dm-min", type=float, default=1.0, show_default=True,
+              help="Minimum trial DM.")
+@click.option("--ra", type=float, default=RA, show_default=True, help="Pointing RA (deg), sets nchan.")
+@click.option("--dec", type=float, default=DEC, show_default=True, help="Pointing Dec (deg), sets nchan.")
+@click.option("--utc-start", type=float, default=UTC_START, show_default=True,
+              help="Unix time of the observation for pointing map.")
+@click.option("--s-min", type=float, default=5e-2, show_default=True, help="Minimum flux (mJy).")
+@click.option("--s-max", type=float, default=5e-1, show_default=True, help="Maximum flux (mJy).")
+def main(tsamp, n_injections, output, ndays, seed, max_dm, dm_min, ra, dec, utc_start, s_min, s_max):
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.getLogger(ps_inject.__name__).setLevel(logging.WARNING)
+
+    if tsamp is None:
+        tsamp = TSAMP
+    else:
+        tsamp /= 1e6 #convert from input (us) to seconds
+    ps_inject.TSAMP = tsamp
+
+    if output is None:
+        output = f"transmissivity_prediction_tsamp{tsamp:.8g}_ndays{ndays}.npy"
+
+    rng = np.random.default_rng(seed)
+
+    date = datetime.fromtimestamp(utc_start, tz=timezone.utc)
+    pspec = NoiseFreePowerSpectra(tsamp, max_dm, ra, dec, date, ndays=ndays)
+    f_nyquist = pspec.freq_labels[-1]
+    log.info(
+        f"tsamp = {tsamp * 1e6} us, ndays = {ndays}, Nyquist = {f_nyquist:.2f} Hz, "
+        f"{len(pspec.dms)} DM trials up to {pspec.dms[-1]:.1f} pcc"
+    )
+
+    full_harm_bins = make_full_harm_bins(pspec.freq_labels)
+    kernels_dict = {key: kernels[key] for key in kernels.files}
+
+    f_choices = frequency_choices(f_nyquist)
+    S_choices = np.logspace(np.log10(s_min), np.log10(s_max), 10000)
+    n_profiles = len(TPA_profiles.files)
+    dm_max = pspec.dms[-1]
+
+    results = np.zeros(n_injections, dtype=RESULT_DTYPE)
+    n_done = 0
+    n_failed = 0
+
+    try:
+        for i in range(n_injections):
+            f = rng.choice(f_choices)
+            dm = rng.uniform(dm_min, dm_max)
+            S = rng.choice(S_choices)
+            prof_idx = int(rng.integers(n_profiles))
+            profile = np.array(TPA_profiles[str(prof_idx)], dtype=np.float64)
+
             try:
-                (
-                    harms,
-                    predicted_nharm,
-                    predicted_sigma,
-                    rescale_factor,
-                ) = injection.predict_sigma(harms, bins, dm_indices, used_nharm, True)
-            except:
+                sigma, nharm, inj_nharm, fwhm = predict_injection(
+                    pspec, full_harm_bins, kernels_dict, tsamp, f, dm, S, profile
+                )
+            except Exception as e:
+                n_failed += 1
+                log.debug(f"Injection {i} (f={f}, DM={dm}, S={S}) failed: {e!r}")
                 continue
-            info = f'{i} {f[i]} {dm[i]} {S[i]} {fwhm} {predicted_sigma} {predicted_nharm}\n'
-            file.write(info)
+
+            results[n_done] = (prof_idx, f, dm, S, fwhm, inj_nharm, sigma, nharm)
+            n_done += 1
+
+            if (i + 1) % 500 == 0:
+                log.info(f"{i + 1}/{n_injections} injections ({n_failed} failed)")
+    finally:
+        results = results[:n_done]
+        np.save(output, results)
+        log.info(
+            f"Saved {n_done} injections to {output} "
+            f"({n_failed} failed out of {n_done + n_failed} attempted)."
+        )
+
+
+if __name__ == "__main__":
+    main()
