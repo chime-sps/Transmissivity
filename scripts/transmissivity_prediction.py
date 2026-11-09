@@ -4,28 +4,26 @@ from datetime import datetime, timezone
 
 import click
 import numpy as np
-
 import ps_processes.processes.ps_inject as ps_inject
-from ps_processes.processes.ps_inject import Injection, TPA_profiles, kernels
+from ps_processes.processes.ps_inject import Injection, TPA_profiles, get_nchan, kernels
 from sps_common.constants import DM_CONSTANT, FREQ_BOTTOM, FREQ_TOP, TSAMP
-from sps_common.interfaces.utilities import harmonic_sum
 
 log = logging.getLogger(__name__)
 
-PADDED_LENGTH = 1048576  
+PADDED_LENGTH = 1048576 
+T_OBS = PADDED_LENGTH * TSAMP 
 MAX_DM = 10**3.3  
-RA = 50.814417767387674  
+RA = 50.814417767387674 
 DEC = 39.90059501729749  
-UTC_START = 1696587658.0  
+UTC_START = 1696587658.0 
 
-# output columns of npz file
 RESULT_DTYPE = np.dtype(
     [
         ("TPA_idx", np.int32),
         ("frequency", np.float64),
         ("DM", np.float64),  
         ("flux", np.float64),  
-        ("FWHM", np.float64),  
+        ("FWHM", np.float64),
         ("injected_nharm", np.int32),
         ("predicted_sigma", np.float64),
         ("predicted_nharm", np.int32),
@@ -38,11 +36,9 @@ class NoiseFreePowerSpectra:
     Basically just exists to be a minimal pspec that we can read attributes from.
     """
 
-    def __init__(
-        self, tsamp, max_dm, ra, dec, date, ndays=1, padded_length=PADDED_LENGTH
-    ):
-        self.freq_labels = np.fft.rfftfreq(padded_length, d=tsamp)[:-1]
-
+    def __init__(self, tsamp, max_dm, ra, dec, date, ndays=1, t_obs=T_OBS):
+        self.padded_length = int(round(t_obs / tsamp))
+        self.freq_labels = np.fft.rfftfreq(self.padded_length, d=tsamp)[:-1]
         disp_delay = 1 / FREQ_BOTTOM**2 - 1 / FREQ_TOP**2
         num_dms = int(DM_CONSTANT * max_dm * disp_delay / tsamp) + 1
         self.dms = np.arange(0, num_dms) / DM_CONSTANT / disp_delay * tsamp
@@ -57,21 +53,7 @@ class NoiseFreePowerSpectra:
         self.datetimes = [date]
 
 
-def make_full_harm_bins(freq_labels, num_harm=32):
-    """
-    From ps_search.py.
-    """
-    ps_length_search = (len(freq_labels) // num_harm) * num_harm
-    return np.vstack(
-        (
-            np.arange(0, ps_length_search),
-            harmonic_sum(num_harm, np.zeros(ps_length_search))[1],
-        )
-    ).astype(np.int32)
-
-
 def frequency_choices(f_nyquist):
-    
     f_dist = np.loadtxt(
         os.path.join(os.path.dirname(ps_inject.__file__), "atnf_freqs.txt"),
         usecols=[1],
@@ -82,7 +64,6 @@ def frequency_choices(f_nyquist):
 
 
 def disperse_true_dm_row(inj, prof_fft, kernels_dict):
-    
     trial_dms = inj.trial_dms
     i_min = np.argmin(np.abs((inj.true_dm - 2 * inj.deltaDM) - trial_dms))
     i_max = np.argmin(np.abs((inj.true_dm + 2 * inj.deltaDM) - trial_dms))
@@ -96,14 +77,14 @@ def disperse_true_dm_row(inj, prof_fft, kernels_dict):
     return dm_indices, row
 
 
-def predict_injection(pspec, full_harm_bins, kernels_dict, tsamp, f, dm, flux, profile):
+def predict_injection(pspec, kernels_dict, tsamp, f, dm, flux, profile):
     """
     Same as ps_inject() EXCEPT:
         - no red noise normalization
         - no RFI weighting
         - only disperse at true DM row
     """
-    inj = Injection(pspec, full_harm_bins, dm, f, profile, flux=flux)
+    inj = Injection(pspec, None, dm, f, profile, flux=flux)
 
     freqs = pspec.freq_labels
     f_nyquist = freqs[-1]
@@ -138,7 +119,15 @@ def predict_injection(pspec, full_harm_bins, kernels_dict, tsamp, f, dm, flux, p
     "--tsamp",
     type=float,
     default=None,
-    help="Sample time in microseconds. Default: 983 (CHAMPSS).",
+    help="Sample time in microseconds. Default: 983 us (CHAMPSS).",
+)
+@click.option(
+    "--tobs", type=float, default=T_OBS, show_default=True,
+    help="Observation length in seconds. Default: 18 min.",
+)
+@click.option(
+    "--nchan", type=click.IntRange(min=1), default=None,
+    help="Number of frequency channels for intrachannel smearing.",
 )
 @click.option(
     "-n", "--n-injections", type=int, default=10000, show_default=True,
@@ -146,7 +135,7 @@ def predict_injection(pspec, full_harm_bins, kernels_dict, tsamp, f, dm, flux, p
 )
 @click.option(
     "-o", "--output", type=click.Path(), default=None,
-    help="Output .npy file. Default: transmissivity_prediction_tsamp<tsamp>_ndays<ndays>.npy",
+    help="Output .npy file. Default: transmissivity_prediction_tsamp<tsamp>_ndays<ndays>[_nchan<nchan>].npy",
 )
 @click.option(
     "--ndays", type=click.IntRange(min=1), default=1, show_default=True,
@@ -155,46 +144,55 @@ def predict_injection(pspec, full_harm_bins, kernels_dict, tsamp, f, dm, flux, p
 @click.option("--seed", type=int, default=None, help="Seed for the random generator.")
 @click.option(
     "--max-dm", type=float, default=MAX_DM, show_default=True,
-    help="Maximum trial DM.",
+    help="Maximum trial DM of the synthetic spectrum.",
 )
 @click.option("--dm-min", type=float, default=1.0, show_default=True,
-              help="Minimum trial DM.")
-@click.option("--ra", type=float, default=RA, show_default=True, help="Pointing RA (deg), sets nchan.")
-@click.option("--dec", type=float, default=DEC, show_default=True, help="Pointing Dec (deg), sets nchan.")
+              help="Lower bound of the uniform DM distribution.")
+@click.option("--dm-max", type=float, default=None,
+              help="Upper bound of the uniform DM distribution. Default: --max-dm.")
+@click.option("--ra", type=float, default=RA, show_default=True, help="Pointing RA (deg), sets Tsky and nchan.")
+@click.option("--dec", type=float, default=DEC, show_default=True, help="Pointing Dec (deg), sets Tsky and nchan.")
 @click.option("--utc-start", type=float, default=UTC_START, show_default=True,
-              help="Unix time of the observation for pointing map.")
+              help="Unix time of the observation, selects the pointing map (nchan).")
 @click.option("--s-min", type=float, default=5e-2, show_default=True, help="Minimum flux (mJy).")
 @click.option("--s-max", type=float, default=5e-1, show_default=True, help="Maximum flux (mJy).")
-def main(tsamp, n_injections, output, ndays, seed, max_dm, dm_min, ra, dec, utc_start, s_min, s_max):
+def main(tsamp, tobs, nchan, n_injections, output, ndays, seed, max_dm, dm_min, dm_max,
+         ra, dec, utc_start, s_min, s_max):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger(ps_inject.__name__).setLevel(logging.WARNING)
 
     if tsamp is None:
         tsamp = TSAMP
     else:
-        tsamp /= 1e6 #convert from input (us) to seconds
+        tsamp /= 1e6 #convert from input (us)
     ps_inject.TSAMP = tsamp
+    if nchan is not None:
+        ps_inject.get_nchan = lambda ra, dec, date: nchan
 
     if output is None:
-        output = f"transmissivity_prediction_tsamp{tsamp:.8g}_ndays{ndays}.npy"
+        output = f"transmissivity_prediction_tsamp{tsamp:.8g}_ndays{ndays}"
+        if nchan is not None:
+            output += f"_nchan{nchan}"
+        output += ".npy"
 
     rng = np.random.default_rng(seed)
 
     date = datetime.fromtimestamp(utc_start, tz=timezone.utc)
-    pspec = NoiseFreePowerSpectra(tsamp, max_dm, ra, dec, date, ndays=ndays)
+    pspec = NoiseFreePowerSpectra(tsamp, max_dm, ra, dec, date, ndays=ndays, t_obs=tobs)
     f_nyquist = pspec.freq_labels[-1]
+    nchan_used = nchan if nchan is not None else get_nchan(ra=ra, dec=dec, date=date)
     log.info(
-        f"tsamp = {tsamp * 1e6} us, ndays = {ndays}, Nyquist = {f_nyquist:.2f} Hz, "
-        f"{len(pspec.dms)} DM trials up to {pspec.dms[-1]:.1f} pcc"
+        f"tsamp = {tsamp} s, T_obs = {pspec.padded_length * tsamp:.1f} s "
+        f"({pspec.padded_length} samples), ndays = {ndays}, nchan = {nchan_used}, "
+        f"Nyquist = {f_nyquist:.2f} Hz, {len(pspec.dms)} DM trials up to {pspec.dms[-1]:.1f} pc/cc"
     )
 
-    full_harm_bins = make_full_harm_bins(pspec.freq_labels)
     kernels_dict = {key: kernels[key] for key in kernels.files}
 
     f_choices = frequency_choices(f_nyquist)
     S_choices = np.logspace(np.log10(s_min), np.log10(s_max), 10000)
     n_profiles = len(TPA_profiles.files)
-    dm_max = pspec.dms[-1]
+    dm_high = pspec.dms[-1] if dm_max is None else min(dm_max, pspec.dms[-1])
 
     results = np.zeros(n_injections, dtype=RESULT_DTYPE)
     n_done = 0
@@ -203,14 +201,14 @@ def main(tsamp, n_injections, output, ndays, seed, max_dm, dm_min, ra, dec, utc_
     try:
         for i in range(n_injections):
             f = rng.choice(f_choices)
-            dm = rng.uniform(dm_min, dm_max)
+            dm = rng.uniform(dm_min, dm_high)
             S = rng.choice(S_choices)
             prof_idx = int(rng.integers(n_profiles))
             profile = np.array(TPA_profiles[str(prof_idx)], dtype=np.float64)
 
             try:
                 sigma, nharm, inj_nharm, fwhm = predict_injection(
-                    pspec, full_harm_bins, kernels_dict, tsamp, f, dm, S, profile
+                    pspec, kernels_dict, tsamp, f, dm, S, profile
                 )
             except Exception as e:
                 n_failed += 1
