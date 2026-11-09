@@ -5,11 +5,14 @@ from matplotlib.ticker import LogFormatter
 from matplotlib import colors
 from scipy.ndimage import distance_transform_edt
 
+def _column(data, col):
+    """handle structured arrays"""
+    if data.dtype.names is not None:
+        return data[col]
+    return data[:, col]
+
 def fill_nans(arr):
-    # Fill NaNs from valid neighbours.
-    #   1D: linear interpolation; NaNs at the ends take the nearest valid value.
-    #   2D: each NaN takes the value of the nearest valid cell in the map, so
-    #       nothing is carried from the end of one row to the start of the next.
+
     nan_mask = np.isnan(arr)
     if nan_mask.all() or not nan_mask.any():
         return arr
@@ -22,15 +25,16 @@ def fill_nans(arr):
     return arr[tuple(nearest)]
 
 def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicted = False,
+                    sigma_col = None, sigma_threshold = 6.,
                     apply_thin_mask = True, mask_cutoff = 20):
 
     if stype in ['1d', '1', '1D', 1]:
         col, bins, gauss_dev = P
-        arr_injected, arr_retrieved = get_density1d(full_data,
-                                                    col, 
-                                                    bins, 
+        arr_injected, arr_retrieved = get_density1d(full_data, col, bins,
                                                     def_retrieval = def_retrieval,
-                                                    predicted = predicted)
+                                                    predicted = predicted,
+                                                    sigma_col = sigma_col,
+                                                    sigma_threshold = sigma_threshold)
         beam_area = np.sqrt(2 * np.pi) * gauss_dev
 
     elif stype in ['2d', '2', '2D', 2]:
@@ -41,16 +45,18 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
                                                     col2,
                                                     bins1,
                                                     bins2,
-                                                    def_retrieval = def_retrieval)
+                                                    def_retrieval = def_retrieval,
+                                                    predicted = predicted,
+                                                    sigma_col = sigma_col,
+                                                    sigma_threshold = sigma_threshold)
         beam_area = 2 * np.pi * dev1 * dev2
         
     else:
         print(f'stype was not a valid input.')
         return
     
-    # injection distributions
-    arr_inj_smooth = gaussian_filter(arr_injected, gauss_dev)
-    arr_ret_smooth = gaussian_filter(arr_retrieved, gauss_dev)
+    arr_inj_smooth = gaussian_filter(arr_injected.astype(float), gauss_dev)
+    arr_ret_smooth = gaussian_filter(arr_retrieved.astype(float), gauss_dev)
     arr_inj_per_beam = arr_inj_smooth * beam_area
 
     # densities
@@ -70,15 +76,16 @@ def get_sensitivity(full_data, *P, stype = '1d', def_retrieval = 'all', predicte
     return arr_inj_per_beam, arr_ret_p, arr_ret_p_smooth
 
 def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'all',
-                  predicted = False):
+                  predicted = False, sigma_col = None, sigma_threshold = 6.):
 
-    injected_density, _ = np.histogram(full_data[:, col], bins = bins)
+    values = _column(full_data, col)
+    injected_density, _ = np.histogram(values, bins = bins)
 
     if predicted:
-        retrieved_mask = full_data[:, 5] > 6. #index is awkwardly hard-coded...
-        retrieved_density, _ = np.histogram(full_data[retrieved_mask][:, col], 
-                                              bins=bins)
-
+        if sigma_col is None:
+            raise ValueError("predicted=True needs sigma_col (index or field name of the predicted sigma).")
+        retrieved_mask = _column(full_data, sigma_col) >= sigma_threshold
+        retrieved_density, _ = np.histogram(values[retrieved_mask], bins=bins)
         return injected_density, retrieved_density
         
     if dtype == 'retrieved':
@@ -102,9 +109,21 @@ def get_density1d(full_data, col, bins, dtype = 'retrieved', def_retrieval = 'al
         return injected_density, missed_density
 
 def get_density2d(full_data, col1, col2, bins1, bins2, def_retrieval = 'all',
-                  stype = 'retrieved'):
+                  stype = 'retrieved', predicted = False, sigma_col = None,
+                  sigma_threshold = 6.):
 
     bin_edges = [bins1, bins2]
+
+    if predicted:
+        if sigma_col is None:
+            raise ValueError("predicted=True needs sigma_col (index or field name of the predicted sigma).")
+        x = _column(full_data, col1)
+        y = _column(full_data, col2)
+        retrieved_mask = _column(full_data, sigma_col) >= sigma_threshold
+        injected_density, _, _ = np.histogram2d(x, y, bins=bin_edges)
+        retrieved_density, _, _ = np.histogram2d(x[retrieved_mask], y[retrieved_mask],
+                                                 bins=bin_edges)
+        return injected_density, retrieved_density
 
     cols = [col1, col2]
 
